@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "casestats",
+  "version": "${version}",
+  "name": "CaseStats",
+  "description": "",
+  "authors": [],
+  "contact": {
+    "repo": "https://github.com/Tobi/CaseStats"
+  },
+  "license": "MIT",
+  "icon": "assets/casestats/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "de.fanta.casestats.CaseStats"
+    ]
+  },
+  "mixins": [
+    "casestats.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
