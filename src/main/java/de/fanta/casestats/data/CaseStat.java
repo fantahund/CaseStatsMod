@@ -2,12 +2,7 @@ package de.fanta.casestats.data;
 
 import net.minecraft.item.ItemStack;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class CaseStat {
 
@@ -15,23 +10,34 @@ public class CaseStat {
     private final ItemStack icon;
     private String name;
 
-    private Set<ItemStat> occurrences;
-    private Map<UUID, PlayerStat> playerStats;
+    private final Map<UUID, PlayerStat> playerStats;
 
     public CaseStat(String id, ItemStack icon) {
         this.id = id;
         this.icon = icon;
-        this.occurrences = new HashSet<>();
+        this.playerStats = new HashMap<>();
     }
 
-    public void addItemOccurrence(CaseItem caseItem, UUID uuid) {
+    public String id() {
+        return id;
+    }
+
+    public ItemStack icon() {
+        return icon;
+    }
+
+    public void addItemOccurrence(UUID uuid, CaseItem caseItem) {
         playerStats.computeIfAbsent(uuid, PlayerStat::new).addOccurrence(caseItem);
+    }
+
+    public Collection<PlayerStat> playerStats() {
+        return playerStats.values();
     }
 
     public static class PlayerStat {
 
-        private UUID uuid;
-        private Map<CaseItem, Integer> occurrences;
+        private final UUID uuid;
+        private final Map<CaseItem, Integer> occurrences;
 
         public PlayerStat(UUID uuid) {
             this.uuid = uuid;
@@ -46,10 +52,18 @@ public class CaseStat {
             occurrences.put(caseItem, occurrence);
         }
 
+        public int getOccurrence(CaseItem caseItem) {
+            return occurrences.getOrDefault(caseItem, 0);
+        }
+
+        public Set<Map.Entry<CaseItem, Integer>> occurrences() {
+            return occurrences.entrySet();
+        }
+
         @Override
         public boolean equals(Object obj) {
             if (!(obj instanceof PlayerStat playerStat)) return false;
-            return Objects.equals(uuid, );
+            return Objects.equals(uuid, playerStat.uuid);
         }
 
         @Override
@@ -58,52 +72,5 @@ public class CaseStat {
         }
 
     }
-
-    public static class ItemStat {
-
-        private final CaseItem caseItem;
-
-        private final Map<UUID, Integer> perPlayerOccurrences;
-
-        public ItemStat(CaseItem caseItem) {
-            this.caseItem = caseItem;
-            this.perPlayerOccurrences = new HashMap<>();
-        }
-
-        public CaseItem caseItem() {
-            return caseItem;
-        }
-
-        public void addOccurrence(UUID player) {
-            perPlayerOccurrences.compute(player, (uuid, curr) -> (curr == null) ? 1 : (curr + 1));
-        }
-
-        public void setOccurrence(UUID player, int occurrences) {
-            perPlayerOccurrences.put(player, occurrences);
-        }
-
-        public int getOccurrence(UUID player) {
-            return perPlayerOccurrences.getOrDefault(player, 0);
-        }
-
-        public void setOccurrences(Map<UUID, Integer> occurrences) {
-            perPlayerOccurrences.putAll(occurrences);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (!(obj instanceof ItemStat itemStat)) return false;
-            return Objects.equals(caseItem, itemStat.caseItem);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hashCode(caseItem);
-        }
-    }
-
-
-
-
 
 }

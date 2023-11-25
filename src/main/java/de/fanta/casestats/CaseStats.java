@@ -3,6 +3,7 @@ package de.fanta.casestats;
 import de.cubeside.connection.ConnectionAPI;
 import de.cubeside.connection.GlobalClientFabric;
 import de.fanta.casestats.data.Database;
+import de.fanta.casestats.data.Stats;
 import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.item.ItemStack;
 import org.apache.logging.log4j.LogManager;
@@ -21,6 +22,8 @@ public class CaseStats implements ClientModInitializer {
     private static Database DATABASE;
     private ConnectionAPI connectionAPI;
     private boolean useConnectionAPI = false;
+    private Stats stats;
+
     @Override
     public void onInitializeClient() {
         connectionAPI = GlobalClientFabric.getInstance();
@@ -28,12 +31,25 @@ public class CaseStats implements ClientModInitializer {
             useConnectionAPI = true;
         }
         config = createAndGetConfig();
+        stats = new Stats(); // TODO: Optional Read from local
         DATABASE = new Database();
 
         Events events = new Events();
         events.init();
 
-        new CaseStatsChannelHandler();
+        new CaseStatsChannelHandler(this);
+//        ClientLifecycleEvents.CLIENT_STARTED.register(this::onConnectGlobalClient);
+    }
+
+    public void onConnectGlobalClient(MinecraftClient client) {
+        connectionAPI = GlobalClientFabric.getInstance();
+        if (connectionAPI != null) {
+            useConnectionAPI = true;
+        }
+    }
+
+    public static CaseStats getInstance() {
+        return INSTANCE;
     }
 
     public static void setOpenCase(boolean value) {
@@ -75,5 +91,9 @@ public class CaseStats implements ClientModInitializer {
 
     public boolean isUseConnectionAPI() {
         return useConnectionAPI;
+    }
+
+    public Stats stats() {
+        return stats;
     }
 }
