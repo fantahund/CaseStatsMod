@@ -1,8 +1,9 @@
 package de.fanta.casestats;
 
+import de.cubeside.connection.ConnectionAPI;
+import de.cubeside.connection.GlobalClientFabric;
 import de.fanta.casestats.data.Database;
 import net.fabricmc.api.ClientModInitializer;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,9 +19,14 @@ public class CaseStats implements ClientModInitializer {
     public static final String MODID = "CaseStats";
     public static final Logger LOGGER = LogManager.getLogger(MODID);
     private static Database DATABASE;
-    public static HashMap<Item, Integer> items = new HashMap<>();
+    private ConnectionAPI connectionAPI;
+    private boolean useConnectionAPI = false;
     @Override
     public void onInitializeClient() {
+        connectionAPI = GlobalClientFabric.getInstance();
+        if (connectionAPI != null) {
+            useConnectionAPI = true;
+        }
         config = createAndGetConfig();
         DATABASE = new Database();
 
@@ -61,5 +67,13 @@ public class CaseStats implements ClientModInitializer {
 
     public static Database getDatabase() {
         return DATABASE;
+    }
+
+    public ConnectionAPI getConnectionAPI() {
+        return connectionAPI;
+    }
+
+    public boolean isUseConnectionAPI() {
+        return useConnectionAPI;
     }
 }

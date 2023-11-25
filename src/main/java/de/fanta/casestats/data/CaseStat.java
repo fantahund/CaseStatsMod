@@ -1,18 +1,11 @@
 package de.fanta.casestats.data;
 
-import com.google.common.hash.HashCode;
-import com.google.common.hash.Hashing;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,7 +16,7 @@ public class CaseStat {
     private String name;
 
     private Set<ItemStat> occurrences;
-    private Map<CaseItem, ItemStat> itemStats;
+    private Map<UUID, PlayerStat> playerStats;
 
     public CaseStat(String id, ItemStack icon) {
         this.id = id;
@@ -32,7 +25,38 @@ public class CaseStat {
     }
 
     public void addItemOccurrence(CaseItem caseItem, UUID uuid) {
-        itemStats.computeIfAbsent(caseItem, caseItem1 -> new ItemStat(caseItem1)).addOccurrence(uuid);
+        playerStats.computeIfAbsent(uuid, PlayerStat::new).addOccurrence(caseItem);
+    }
+
+    public static class PlayerStat {
+
+        private UUID uuid;
+        private Map<CaseItem, Integer> occurrences;
+
+        public PlayerStat(UUID uuid) {
+            this.uuid = uuid;
+            this.occurrences = new HashMap<>();
+        }
+
+        public void addOccurrence(CaseItem caseItem) {
+            occurrences.compute(caseItem, (uuid, curr) -> curr == null ? 1 : ++curr);
+        }
+
+        public void setOccurrence(CaseItem caseItem, int occurrence) {
+            occurrences.put(caseItem, occurrence);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof PlayerStat playerStat)) return false;
+            return Objects.equals(uuid, );
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(uuid);
+        }
+
     }
 
     public static class ItemStat {
