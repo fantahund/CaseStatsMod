@@ -5,6 +5,8 @@ import de.cubeside.connection.GlobalClientFabric;
 import de.fanta.casestats.data.Database;
 import de.fanta.casestats.data.Stats;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.ItemStack;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CaseStats implements ClientModInitializer {
+    private static CaseStats INSTANCE;
     private static boolean openCase = false;
     private static ItemStack lastUseItem;
     private static Map<String, String> config = new HashMap<>();
@@ -26,10 +29,7 @@ public class CaseStats implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        connectionAPI = GlobalClientFabric.getInstance();
-        if (connectionAPI != null) {
-            useConnectionAPI = true;
-        }
+        INSTANCE = this;
         config = createAndGetConfig();
         stats = new Stats(); // TODO: Optional Read from local
         DATABASE = new Database();
@@ -38,7 +38,7 @@ public class CaseStats implements ClientModInitializer {
         events.init();
 
         new CaseStatsChannelHandler(this);
-//        ClientLifecycleEvents.CLIENT_STARTED.register(this::onConnectGlobalClient);
+        ClientLifecycleEvents.CLIENT_STARTED.register(this::onConnectGlobalClient);
     }
 
     public void onConnectGlobalClient(MinecraftClient client) {
@@ -63,6 +63,7 @@ public class CaseStats implements ClientModInitializer {
     public static void setLastUseItem(ItemStack lastUseItem) {
         CaseStats.lastUseItem = lastUseItem;
     }
+
     public static ItemStack getLastUseItem() {
         return lastUseItem;
     }
