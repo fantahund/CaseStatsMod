@@ -1,32 +1,26 @@
 package de.fanta.casestats;
 
-import com.google.common.collect.Lists;
 import de.fanta.casestats.data.CaseItem;
 import de.fanta.casestats.data.CaseStat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.Block;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.StatsListener;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenTexts;
-import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stat;
-import net.minecraft.stat.StatType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Util;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
 @Environment(EnvType.CLIENT)
 public class CaseStatsScreen extends Screen {
@@ -143,7 +137,11 @@ public class CaseStatsScreen extends Screen {
     void renderStatItem(DrawContext context, int x, int y, ItemStack item) {
         this.renderIcon(context, x + 1, y + 1, SLOT_TEXTURE);
         context.drawItem(item, x + 2, y + 2);
-        //context.drawItem();
+        if (item.getCount() > 1) {
+            String string = String.valueOf(item.getCount());
+            context.getMatrices().translate(0.0F, 0.0F, 200.0F);
+            context.drawText(textRenderer, string, x + 19 - 1 - textRenderer.getWidth(string), y + 6 + 4, 16777215, true);
+        }
     }
 
     void renderIcon(DrawContext context, int x, int y, Identifier texture) {
@@ -253,8 +251,7 @@ public class CaseStatsScreen extends Screen {
                     if (mouseX < i + 40 || mouseX > i + 40 + 20) {
                         return;
                     }
-
-                    context.drawTooltip(CaseStatsScreen.this.textRenderer, entry.getItem().name(), mouseX, mouseY);
+                    context.drawItemTooltip(CaseStatsScreen.this.textRenderer, entry.getItem().stack(), mouseX, mouseY);
                 } else {
                     Text text = null;
                     int j = mouseX - i;
