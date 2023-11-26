@@ -1,30 +1,20 @@
 package de.fanta.casestats;
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import de.fanta.casestats.data.CaseItem;
 import de.fanta.casestats.data.CaseStat;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.Enchantments;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-
-import java.awt.*;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannelHandler {
 
@@ -46,30 +36,25 @@ public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannel
             if (caseStatsDateChannel == globalChatDataChannelID && caseStatsDateChannelVersion == 0) {
                 String caseId = packet.readString();
                 Item cItem = Registries.ITEM.get(Identifier.tryParse(packet.readString()));
-                final MutableText caseName = readText(packet);
-                boolean caseEnchantGlint = packet.readBoolean();
-                String caseHeadTex = packet.readString();
+                String caseItemString = packet.readString();
 
                 CaseStat stat = caseStats.stats().caseStatOf(caseId).orElseGet(() -> {
-                    ItemStack caseStack = createItemStack(cItem, 1, caseName, caseEnchantGlint, caseHeadTex);
+                    ItemStack caseStack = createItemStack(cItem, 1, caseItemString);
                     CaseStat caseStat = new CaseStat(caseId, caseStack);
                     caseStats.stats().add(caseStat);
                     return caseStat;
                 });
-                CaseStats.LOGGER.info("Got CaseStat: " + caseId + " = " + stat.icon() + " " + stat.icon().getNbt());
+                //CaseStats.LOGGER.info("Got CaseStat: " + caseId + " = " + stat.icon() + " " + stat.icon().getNbt());
 
                 int slots = packet.readInt();
                 for (int i = 0; i < slots; i++) {
                     Item item = Registries.ITEM.get(Identifier.tryParse(packet.readString()));
                     int amount = packet.readInt();
-                    MutableText name = readText(packet);
-                    boolean enchanted = packet.readBoolean();
+                    String itemString = packet.readString();
 
-                    String headTex = packet.readString();
-                    ItemStack stack = createItemStack(item, amount, name, enchanted, headTex);
-                    CaseItem caseItem1 = new CaseItem(stack, item, amount, name, enchanted);
+                    ItemStack stack = createItemStack(item, amount, itemString);
+                    CaseItem caseItem1 = new CaseItem(stack, item, amount, (MutableText) stack.getName(), stack.hasEnchantments());
 
-                    CaseStats.LOGGER.info("  - " + stack + " " + stack.getNbt());
                     stat.addItemOccurrence(client.player.getUuid(), caseItem1);
                 }
 
@@ -79,42 +64,19 @@ public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannel
         }
     }
 
-    private static MutableText readText(PacketByteBuf packet) {
-        try {
-            return (MutableText) packet.readText();
-        } catch (IndexOutOfBoundsException ignored) {
-        }
-        return Text.empty();
-    }
-
-    private static ItemStack createItemStack(Item item, int amount, Text name, boolean enchantGlint, String headTexture) {
+    private static ItemStack createItemStack(Item item, int amount, String itemString) {
         ItemStack stack = new ItemStack(item, amount);
-        if (headTexture != null && !headTexture.isEmpty() && !headTexture.isBlank()) {
-            stack.setNbt(nbtFromTextureValue(headTexture));
+        NbtCompound nbtCompound = null;
+        try {
+            nbtCompound = StringNbtReader.parse(itemString);
+        } catch (CommandSyntaxException e) {
+            CaseStats.LOGGER.error("nbtCompound could not be parse.", e);
         }
-        stack.setCustomName(name);
-        if (enchantGlint) {
-            stack.addEnchantment(Enchantments.UNBREAKING, 0);
+
+        if (nbtCompound != null) {
+            stack.setNbt(nbtCompound);
         }
         return stack;
     }
-
-    public static NbtCompound nbtFromTextureValue(String texturevalue) {
-        NbtCompound nbtCompound = new NbtCompound();
-        NbtCompound skullownertag = new NbtCompound();
-        NbtCompound texturetag = new NbtCompound();
-        NbtList texturelist = new NbtList();
-        NbtCompound valuetag = new NbtCompound();
-
-        valuetag.putString("Value", texturevalue);
-        texturelist.add(valuetag);
-        texturetag.put("textures", texturelist);
-        skullownertag.put("Properties", texturetag);
-        skullownertag.putUuid("Id", UUID.randomUUID());
-        nbtCompound.put("SkullOwner", skullownertag);
-
-        return nbtCompound;
-    }
-
 }
 

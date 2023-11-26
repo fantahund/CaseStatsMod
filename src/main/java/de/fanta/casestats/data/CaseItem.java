@@ -43,11 +43,11 @@ public class CaseItem {
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof CaseItem caseItem)) return false;
-        return Objects.equals(item, caseItem.item) && amount == caseItem.amount && Objects.equals(name, caseItem.name) && enchanted == caseItem.enchanted;
+        return Objects.equals(item, caseItem.item) && amount == caseItem.amount && Objects.equals(name.getString(), caseItem.name.getString()) && enchanted == caseItem.enchanted;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(item, amount, name, enchanted);
+        return Objects.hash(item, amount, name.getString(), enchanted);
     }
 }

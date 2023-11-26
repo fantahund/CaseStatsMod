@@ -6,6 +6,7 @@
   "mixins": [
   ],
   "client": [
+    "MixinPauseScreen"
   ],
   "injectors": {
     "defaultRequire": 1

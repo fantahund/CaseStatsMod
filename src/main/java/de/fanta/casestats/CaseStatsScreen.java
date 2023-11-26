@@ -16,6 +16,7 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stat;
@@ -139,9 +140,10 @@ public class CaseStatsScreen extends Screen {
         return 115 + 40 * index;
     }
 
-    void renderStatItem(DrawContext context, int x, int y, Item item) {
+    void renderStatItem(DrawContext context, int x, int y, ItemStack item) {
         this.renderIcon(context, x + 1, y + 1, SLOT_TEXTURE);
-        context.drawItemWithoutEntity(item.getDefaultStack(), x + 2, y + 2);
+        context.drawItem(item, x + 2, y + 2);
+        //context.drawItem();
     }
 
     void renderIcon(DrawContext context, int x, int y, Identifier texture) {
@@ -329,7 +331,7 @@ public class CaseStatsScreen extends Screen {
             }
 
             public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-                CaseStatsScreen.this.renderStatItem(context, x + 40, y, this.item.item());
+                CaseStatsScreen.this.renderStatItem(context, x + 40, y, this.item.stack());
                 int i = 0;
                 for (CaseStat.PlayerStat playerStat : selectedCase.playerStats()) {
                     int count = playerStat.getOccurrence(item);
