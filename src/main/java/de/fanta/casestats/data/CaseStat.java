@@ -71,6 +71,9 @@ public class CaseStat {
             return Objects.hashCode(uuid);
         }
 
+        public UUID uuid() {
+            return uuid;
+        }
     }
 
 }

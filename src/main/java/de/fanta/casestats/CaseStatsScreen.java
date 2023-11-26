@@ -1,26 +1,29 @@
 package de.fanta.casestats;
 
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.minecraft.MinecraftSessionService;
+import com.mojang.authlib.yggdrasil.ProfileResult;
 import de.fanta.casestats.data.CaseItem;
 import de.fanta.casestats.data.CaseStat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.stat.Stat;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Environment(EnvType.CLIENT)
 public class CaseStatsScreen extends Screen {
@@ -30,6 +33,8 @@ public class CaseStatsScreen extends Screen {
     static final Identifier SORT_DOWN_TEXTURE = new Identifier("statistics/sort_down");
     private static final Text DOWNLOADING_STATS_TEXT = Text.translatable("multiplayer.downloadingStats");
     static final Text NONE_TEXT = Text.translatable("stats.none");
+    private static final Map<UUID, GameProfile> CACHED_USER_PROFILES = new HashMap<>();
+
     protected final Screen parent;
     private CaseStatsListWidget caseStats;
     private CaseStats caseStatsMod;
@@ -40,7 +45,7 @@ public class CaseStatsScreen extends Screen {
     private boolean downloadingStats = true;
 
     public CaseStatsScreen(Screen parent) {
-        super(Text.translatable("gui.stats"));
+        super(Text.literal("Case-Statistics"));
         this.parent = parent;
         this.caseStatsMod = CaseStats.getInstance();
     }
@@ -59,18 +64,17 @@ public class CaseStatsScreen extends Screen {
     }
 
     public void createButtons() {
-        ButtonWidget buttonWidget = this.addDrawableChild(
-                ButtonWidget.builder(Text.translatable("stat.itemsButton"),
-                                (button) -> this.selectStatList(this.caseStats))
-                        .dimensions(this.width / 2 - 40, this.height - 52, 80, 20).build()
-        );
+        int i = 0;
+        for (CaseStat caseStat : caseStatsMod.stats().caseStats()) {
+            this.addDrawableChild(new ItemStackButtonWidget(this.width / 2 - i*22, this.height - 52 + i, 20, 20, caseStat.icon(), button -> {
+                caseStats.setSelectedCaseStat(caseStat);
+            }));
+            i++;
+        }
         this.addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE,
                         (button) -> this.client.setScreen(this.parent))
                 .dimensions(this.width / 2 - 100, this.height - 28, 200, 20).build()
         );
-        if (this.caseStats.children().isEmpty()) {
-            buttonWidget.active = false;
-        }
     }
 
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -148,6 +152,19 @@ public class CaseStatsScreen extends Screen {
         context.drawGuiTexture(texture, x, y, 0, 18, 18);
     }
 
+    private static Optional<GameProfile> fetchProfile(UUID uuid) {
+        if (CACHED_USER_PROFILES.containsKey(uuid)) return Optional.ofNullable(CACHED_USER_PROFILES.get(uuid));
+
+        MinecraftSessionService service = MinecraftClient.getInstance().getSessionService();
+        ProfileResult result = service.fetchProfile(uuid, false);
+        if (result != null) {
+            CACHED_USER_PROFILES.put(uuid, result.profile());
+            return Optional.of(result.profile());
+        }
+        CACHED_USER_PROFILES.put(uuid, null);
+        return Optional.empty();
+    }
+
     @Environment(EnvType.CLIENT)
     private class CaseStatsListWidget extends AlwaysSelectedEntryListWidget<CaseStatsListWidget.Entry> {
         private final Identifier[] headerIconTextures = new Identifier[]{
@@ -160,22 +177,33 @@ public class CaseStatsScreen extends Screen {
         };
         protected int selectedHeaderColumn = -1;
         protected CaseStat selectedCase = null;
+        protected Map<CaseItem, Integer> totalOccurrences;
         protected final ItemComparator comparator = new ItemComparator();
 
-        @Nullable
         protected int listOrder;
 
         public CaseStatsListWidget(MinecraftClient client) {
             super(client, CaseStatsScreen.this.width, CaseStatsScreen.this.height, 32, CaseStatsScreen.this.height - 64, 20);
 
-            Map<CaseItem, Integer> total = new HashMap<>();
+            totalOccurrences = new HashMap<>();
 
             selectedCase = caseStatsMod.stats().caseStats().stream().findFirst().orElse(null);
+            setSelectedCaseStat(selectedCase);
+        }
 
-            Collection<CaseStat.PlayerStat> playerStats = selectedCase == null ? Collections.emptyList() : selectedCase.playerStats(); // TODO: Selection
+        public void setSelectedCaseStat(CaseStat caseStat) {
+            clearEntries();
+            totalOccurrences.clear();
+            if (caseStat == null) return;
+            this.selectedCase = caseStat;
+
+            Collection<CaseStat.PlayerStat> playerStats = selectedCase.playerStats();
             for (CaseStat.PlayerStat playerStat : playerStats) {
+
+                fetchProfile(playerStat.uuid());
+
                 for (Map.Entry<CaseItem, Integer> occurrence : playerStat.occurrences()) {
-                    total.compute(occurrence.getKey(), (caseItem, value) -> {
+                    totalOccurrences.compute(occurrence.getKey(), (caseItem, value) -> {
                         if (value == null) {
                             return occurrence.getValue();
                         } else {
@@ -193,11 +221,25 @@ public class CaseStatsScreen extends Screen {
                 this.selectedHeaderColumn = -1;
             }
 
-            int i;
-            Identifier identifier;
-            for (i = 0; i < this.headerIconTextures.length; ++i) {
-                identifier = this.selectedHeaderColumn == i ? CaseStatsScreen.SLOT_TEXTURE : CaseStatsScreen.HEADER_TEXTURE;
+            Text totalText = Text.literal("Gesamt");
+            context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, totalText, x + CaseStatsScreen.this.getColumnX(0) - CaseStatsScreen.this.textRenderer.getWidth(totalText), y + 5, 16777215);
+
+            Text probText = Text.literal("%");
+            context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, probText, x + CaseStatsScreen.this.getColumnX(1) - CaseStatsScreen.this.textRenderer.getWidth(probText), y + 5, 16777215);
+
+            int i = 2;
+            for (CaseStat.PlayerStat playerStat : selectedCase.playerStats()) {
+                Identifier identifier = this.selectedHeaderColumn == i ? CaseStatsScreen.SLOT_TEXTURE : CaseStatsScreen.HEADER_TEXTURE;
                 CaseStatsScreen.this.renderIcon(context, x + CaseStatsScreen.this.getColumnX(i) - 18, y + 1, identifier);
+
+                ItemStack itemStack = new ItemStack(Items.PLAYER_HEAD);
+                fetchProfile(playerStat.uuid()).ifPresent(gameProfile -> {
+                    NbtCompound nbt = itemStack.getOrCreateNbt();
+                    nbt.put("SkullOwner", NbtHelper.writeGameProfile(new NbtCompound(), gameProfile));
+                });
+
+                context.drawItem(itemStack, x + CaseStatsScreen.this.getColumnX(i) - 17, y + 2);
+                i++;
             }
 
 //            if (this.selectedStatType != null) {
@@ -205,11 +247,6 @@ public class CaseStatsScreen extends Screen {
 //                identifier = this.listOrder == 1 ? CaseStatsScreen.SORT_UP_TEXTURE : CaseStatsScreen.SORT_DOWN_TEXTURE;
 //                CaseStatsScreen.this.renderIcon(context, x + i, y + 1, identifier);
 //            }
-
-            for (i = 0; i < this.headerIconTextures.length; ++i) {
-                int j = this.selectedHeaderColumn == i ? 1 : 0;
-                CaseStatsScreen.this.renderIcon(context, x + CaseStatsScreen.this.getColumnX(i) - 18 + j, y + 1 + j, this.headerIconTextures[i]);
-            }
 
         }
 
@@ -329,10 +366,17 @@ public class CaseStatsScreen extends Screen {
 
             public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
                 CaseStatsScreen.this.renderStatItem(context, x + 40, y, this.item.stack());
-                int i = 0;
+                boolean evenRow = index % 2 == 0;
+                int total = totalOccurrences.getOrDefault(item, 0);
+
+                render(context, total, x + CaseStatsScreen.this.getColumnX(0), y, evenRow);
+                int probability = 0; // TODO: calculate
+                render(context, probability, x + CaseStatsScreen.this.getColumnX(1), y, evenRow);
+
+                int i = 2;
                 for (CaseStat.PlayerStat playerStat : selectedCase.playerStats()) {
                     int count = playerStat.getOccurrence(item);
-                    this.render(context, count, x + CaseStatsScreen.this.getColumnX(i), y, index % 2 == 0);
+                    this.render(context, count, x + CaseStatsScreen.this.getColumnX(i), y, evenRow);
                     i++;
                 }
             }
@@ -345,6 +389,36 @@ public class CaseStatsScreen extends Screen {
             public Text getNarration() {
                 return Text.translatable("narrator.select", this.item.name());
             }
+        }
+    }
+
+    public static class ItemStackButtonWidget extends ButtonWidget {
+
+        private final ItemStack stack;
+
+        ItemStackButtonWidget(int x, int y, int width, int height, ItemStack stack, PressAction onPress) {
+            super(x, y, width, height, Text.empty(), onPress, DEFAULT_NARRATION_SUPPLIER);
+            this.stack = stack;
+        }
+
+        @Override
+        protected void renderButton(DrawContext context, int mouseX, int mouseY, float delta) {
+            super.renderButton(context, mouseX, mouseY, delta);
+            context.drawItem(stack, getX() + 2, getY() + 2);
+        }
+
+        @Override
+        public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+            super.render(context, mouseX, mouseY, delta);
+
+            boolean bl = this.hovered || this.isFocused() && MinecraftClient.getInstance().getNavigationType().isKeyboard();
+            if (bl) {
+                context.drawItemTooltip(MinecraftClient.getInstance().textRenderer, stack, mouseX, mouseY);
+            }
+        }
+
+        @Override
+        public void drawMessage(DrawContext context, TextRenderer textRenderer, int color) {
         }
     }
 }
