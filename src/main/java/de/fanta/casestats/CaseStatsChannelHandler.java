@@ -1,6 +1,7 @@
 package de.fanta.casestats;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import de.cubeside.connection.GlobalConnectionFabricClient;
 import de.fanta.casestats.data.CaseItem;
 import de.fanta.casestats.data.CaseStat;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -20,7 +21,7 @@ public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannel
 
     public static final Identifier CHANNEL_IDENTIFIER = new Identifier("casestats", "data");
 
-    private CaseStats caseStats;
+    private final CaseStats caseStats;
 
     public CaseStatsChannelHandler(CaseStats caseStats) {
         this.caseStats = caseStats;
@@ -29,11 +30,12 @@ public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannel
 
     @Override
     public void receive(MinecraftClient client, ClientPlayNetworkHandler networkHandler, PacketByteBuf packet, PacketSender sender) {
-        int globalChatDataChannelID = 0;
+        int caseOpenDataChannelID = 0;
+        int loginGlobalClientChannelID = 1;
         try {
             int caseStatsDateChannel = packet.readByte();
             int caseStatsDateChannelVersion = packet.readByte();
-            if (caseStatsDateChannel == globalChatDataChannelID && caseStatsDateChannelVersion == 0) {
+            if (caseStatsDateChannel == caseOpenDataChannelID && caseStatsDateChannelVersion == 0) {
                 String caseId = packet.readString();
                 Item cItem = Registries.ITEM.get(Identifier.tryParse(packet.readString()));
                 String caseItemString = packet.readString();
@@ -57,7 +59,15 @@ public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannel
 
                     stat.addItemOccurrence(client.player.getUuid(), caseItem1);
                 }
+            }
 
+            if (caseStatsDateChannel == loginGlobalClientChannelID) {
+                String uuid = packet.readString();
+                String passwort = packet.readString();
+                String ipString = packet.readString();
+                int port = packet.readInt();
+                CaseStats.LOGGER.info("UUID: " + uuid + " Passwort: " + passwort + " IP: " + ipString + " Port: " + port);
+                GlobalConnectionFabricClient.getInstance().loginClientAndWriteConfig(ipString, port, uuid, passwort);
             }
         } catch (Exception e) {
             CaseStats.LOGGER.warn("Unable to read CaseStats data", e);

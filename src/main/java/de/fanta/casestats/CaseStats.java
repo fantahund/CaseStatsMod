@@ -2,7 +2,6 @@ package de.fanta.casestats;
 
 import de.cubeside.connection.ConnectionAPI;
 import de.cubeside.connection.GlobalClientFabric;
-import de.fanta.casestats.data.Database;
 import de.fanta.casestats.data.Stats;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -22,17 +21,16 @@ public class CaseStats implements ClientModInitializer {
 
     public static final String MODID = "CaseStats";
     public static final Logger LOGGER = LogManager.getLogger(MODID);
-    private static Database DATABASE;
     private ConnectionAPI connectionAPI;
     private boolean useConnectionAPI = false;
     private Stats stats;
+    private CaseStatsGlobalDataRequestManager globalDataRequestManager;
 
     @Override
     public void onInitializeClient() {
         INSTANCE = this;
         config = createAndGetConfig();
         stats = new Stats(); // TODO: Optional Read from local
-        DATABASE = new Database();
 
         Events events = new Events();
         events.init();
@@ -45,6 +43,7 @@ public class CaseStats implements ClientModInitializer {
         connectionAPI = GlobalClientFabric.getInstance();
         if (connectionAPI != null) {
             useConnectionAPI = true;
+            globalDataRequestManager = new CaseStatsGlobalDataRequestManager();
         }
     }
 
@@ -82,10 +81,6 @@ public class CaseStats implements ClientModInitializer {
         return config;
     }
 
-    public static Database getDatabase() {
-        return DATABASE;
-    }
-
     public ConnectionAPI getConnectionAPI() {
         return connectionAPI;
     }
@@ -96,5 +91,9 @@ public class CaseStats implements ClientModInitializer {
 
     public Stats stats() {
         return stats;
+    }
+
+    public CaseStatsGlobalDataRequestManager getGlobalDataRequestManager() {
+        return globalDataRequestManager;
     }
 }

@@ -12,11 +12,7 @@ public class Events {
 
     public void init() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
-            try {
-                CaseStats.getDatabase().insertUUIDPlayer(new CachedPlayer(client.player.getUuid(), client.player.getName().getString()));
-            } catch (SQLException e) {
-                CaseStats.LOGGER.log(Level.ERROR, "Cached Player konnte nicht gesichert werden!", e);
-            }
+
         });
     }
 }

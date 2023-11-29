@@ -29,17 +29,17 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
         if (item.getType() == Material.AIR || item.getAmount() < 1) {
             this.sendMsgParts(dataOutputStream, 0);
             return;
-        }
+        }*/
 
         switch (messageType) {
             case GET_ITEM_INFO:
-                List<String> itemInfo = GlobalItemInfoProvider.getItemInfo(item);
+                List<String> itemInfo = List.of("Hallo", "fanta");
                 Object[] message = new Object[itemInfo.size() + 1];
                 message[0] = itemInfo.size();
                 System.arraycopy(itemInfo.toArray(), 0, message, 1, itemInfo.size());
                 this.sendMsgParts(dataOutputStream, message);
                 break;
-        }*/
+        }
     }
 
     @Override

@@ -23,7 +23,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.text.DecimalFormat;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Environment(EnvType.CLIENT)
 public class CaseStatsScreen extends Screen {
@@ -66,7 +72,7 @@ public class CaseStatsScreen extends Screen {
     public void createButtons() {
         int i = 0;
         for (CaseStat caseStat : caseStatsMod.stats().caseStats()) {
-            this.addDrawableChild(new ItemStackButtonWidget(this.width / 2 - i*22, this.height - 52 + i, 20, 20, caseStat.icon(), button -> {
+            this.addDrawableChild(new ItemStackButtonWidget(this.width / 2 - i * 22, this.height - 52, 20, 20, caseStat.icon(), button -> {
                 caseStats.setSelectedCaseStat(caseStat);
             }));
             i++;
@@ -369,20 +375,27 @@ public class CaseStatsScreen extends Screen {
                 boolean evenRow = index % 2 == 0;
                 int total = totalOccurrences.getOrDefault(item, 0);
 
-                render(context, total, x + CaseStatsScreen.this.getColumnX(0), y, evenRow);
-                int probability = 0; // TODO: calculate
-                render(context, probability, x + CaseStatsScreen.this.getColumnX(1), y, evenRow);
-
                 int i = 2;
                 for (CaseStat.PlayerStat playerStat : selectedCase.playerStats()) {
                     int count = playerStat.getOccurrence(item);
-                    this.render(context, count, x + CaseStatsScreen.this.getColumnX(i), y, evenRow);
+                    this.render(context, String.valueOf(count), x + CaseStatsScreen.this.getColumnX(i), y, evenRow);
                     i++;
                 }
+
+                render(context, String.valueOf(total), x + CaseStatsScreen.this.getColumnX(0), y, evenRow);
+
+                int totalCount = 0;
+                for (int caseStat : totalOccurrences.values()) {
+                    totalCount += caseStat;
+                }
+                double probability = (double) total / totalCount * 100;
+                DecimalFormat formatter = new DecimalFormat("#,##0.00");
+
+                render(context, formatter.format(probability) + "%", x + CaseStatsScreen.this.getColumnX(1), y, evenRow);
             }
 
-            protected void render(DrawContext context, int count, int x, int y, boolean white) {
-                Text text = Text.literal(String.valueOf(count));
+            protected void render(DrawContext context, String count, int x, int y, boolean white) {
+                Text text = Text.literal(count);
                 context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, text, x - CaseStatsScreen.this.textRenderer.getWidth(text), y + 5, white ? 16777215 : 9474192);
             }
 
