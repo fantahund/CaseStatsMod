@@ -36,29 +36,34 @@ public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannel
             int caseStatsDateChannel = packet.readByte();
             int caseStatsDateChannelVersion = packet.readByte();
             if (caseStatsDateChannel == caseOpenDataChannelID && caseStatsDateChannelVersion == 0) {
-                String caseId = packet.readString();
-                Item cItem = Registries.ITEM.get(Identifier.tryParse(packet.readString()));
-                String caseItemString = packet.readString();
-
-                CaseStat stat = caseStats.stats().caseStatOf(caseId).orElseGet(() -> {
-                    ItemStack caseStack = createItemStack(cItem, 1, caseItemString);
-                    CaseStat caseStat = new CaseStat(caseId, caseStack);
-                    caseStats.stats().add(caseStat);
-                    return caseStat;
-                });
-                //CaseStats.LOGGER.info("Got CaseStat: " + caseId + " = " + stat.icon() + " " + stat.icon().getNbt());
-
-                int slots = packet.readInt();
-                for (int i = 0; i < slots; i++) {
-                    Item item = Registries.ITEM.get(Identifier.tryParse(packet.readString()));
-                    int amount = packet.readInt();
-                    String itemString = packet.readString();
-
-                    ItemStack stack = createItemStack(item, amount, itemString);
-                    CaseItem caseItem1 = new CaseItem(stack, item, amount, (MutableText) stack.getName(), stack.hasEnchantments());
-
-                    stat.addItemOccurrence(client.player.getUuid(), caseItem1);
+                if (packet.hasArray()) {
+                    byte[] data = packet.array();
+                    CaseStats.LOGGER.info("Send Data to server: " + data.length);
+                    caseStats.getGlobalDataHelper().sendCaseData(data);
                 }
+//                String caseId = packet.readString();
+//                Item cItem = Registries.ITEM.get(Identifier.tryParse(packet.readString()));
+//                String caseItemString = packet.readString();
+//
+//                CaseStat stat = caseStats.stats().caseStatOf(caseId).orElseGet(() -> {
+//                    ItemStack caseStack = createItemStack(cItem, 1, caseItemString);
+//                    CaseStat caseStat = new CaseStat(caseId, caseStack);
+//                    caseStats.stats().add(caseStat);
+//                    return caseStat;
+//                });
+//                //CaseStats.LOGGER.info("Got CaseStat: " + caseId + " = " + stat.icon() + " " + stat.icon().getNbt());
+//
+//                int slots = packet.readInt();
+//                for (int i = 0; i < slots; i++) {
+//                    Item item = Registries.ITEM.get(Identifier.tryParse(packet.readString()));
+//                    int amount = packet.readInt();
+//                    String itemString = packet.readString();
+//
+//                    ItemStack stack = createItemStack(item, amount, itemString);
+//                    CaseItem caseItem1 = new CaseItem(stack, item, amount, (MutableText) stack.getName(), stack.hasEnchantments());
+//
+//                    stat.addItemOccurrence(client.player.getUuid(), caseItem1);
+//                }
             }
 
             if (caseStatsDateChannel == loginGlobalClientChannelID) {

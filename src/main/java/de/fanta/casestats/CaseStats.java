@@ -2,6 +2,8 @@ package de.fanta.casestats;
 
 import de.cubeside.connection.ConnectionAPI;
 import de.cubeside.connection.GlobalClientFabric;
+import de.cubeside.connection.GlobalConnectionFabricClient;
+import de.cubeside.connection.event.GlobalServerConnectedCallback;
 import de.fanta.casestats.data.Stats;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -25,26 +27,29 @@ public class CaseStats implements ClientModInitializer {
     private boolean useConnectionAPI = false;
     private Stats stats;
     private CaseStatsGlobalDataRequestManager globalDataRequestManager;
+    private CaseStatsGlobalDataHelper globalDataHelper;
 
     @Override
     public void onInitializeClient() {
         INSTANCE = this;
         config = createAndGetConfig();
-        stats = new Stats(); // TODO: Optional Read from local
+        stats = new Stats();
 
         Events events = new Events();
         events.init();
 
         new CaseStatsChannelHandler(this);
-        ClientLifecycleEvents.CLIENT_STARTED.register(this::onConnectGlobalClient);
+        GlobalServerConnectedCallback.EVENT.register(server -> {
+            if (server.getName().equals(MinecraftClient.getInstance().player.getUuid().toString())) {
+                onConnectGlobalClient(MinecraftClient.getInstance());
+            }
+        });
     }
 
     public void onConnectGlobalClient(MinecraftClient client) {
         connectionAPI = GlobalClientFabric.getInstance();
-        if (connectionAPI != null) {
-            useConnectionAPI = true;
-            globalDataRequestManager = new CaseStatsGlobalDataRequestManager();
-        }
+        globalDataRequestManager = new CaseStatsGlobalDataRequestManager();
+        globalDataHelper = new CaseStatsGlobalDataHelper();
     }
 
     public static CaseStats getInstance() {
@@ -95,5 +100,9 @@ public class CaseStats implements ClientModInitializer {
 
     public CaseStatsGlobalDataRequestManager getGlobalDataRequestManager() {
         return globalDataRequestManager;
+    }
+
+    public CaseStatsGlobalDataHelper getGlobalDataHelper() {
+        return globalDataHelper;
     }
 }

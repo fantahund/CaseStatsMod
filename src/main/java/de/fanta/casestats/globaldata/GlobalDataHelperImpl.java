@@ -1,6 +1,7 @@
 package de.fanta.casestats.globaldata;
 
 import de.cubeside.connection.ConnectionAPI;
+import de.cubeside.connection.GlobalClientFabric;
 import de.cubeside.connection.GlobalPlayer;
 import de.cubeside.connection.GlobalServer;
 import de.fanta.casestats.CaseStats;
@@ -31,7 +32,7 @@ public abstract class GlobalDataHelperImpl<T extends Enum<T>> implements GlobalD
     private final T[] messageTypes;
 
     public GlobalDataHelperImpl(Class<T> messageTypeClass, String channel) {
-        this.connectionAPI = CaseStats.getInstance().getConnectionAPI();
+        this.connectionAPI = GlobalClientFabric.getInstance();
         this.channel = channel;
         this.messageTypes = messageTypeClass.getEnumConstants();
     }
