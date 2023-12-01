@@ -14,7 +14,8 @@
   "entrypoints": {
     "client": [
       "de.fanta.casestats.CaseStats"
-    ]
+    ],
+    "modmenu": [ "de.fanta.casestats.config.ModMenuImpl" ]
   },
   "mixins": [
     "casestats.mixins.json"
@@ -23,6 +24,7 @@
     "fabricloader": ">=${loader_version}",
     "fabric": "*",
     "minecraft": "${minecraft_version}",
-    "globalconnectionfabricclient": "*"
+    "globalconnectionfabricclient": "*",
+    "malilib": ">=0.17.0"
   }
 }

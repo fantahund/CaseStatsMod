@@ -21,7 +21,7 @@ public abstract class MixinPauseScreen extends Screen {
     private void addCustomButton(CallbackInfo ci) {
         this.addDrawableChild(
                 ButtonWidget.builder(Text.literal("CaseStats"), button -> client.setScreen(new CaseStatsScreen(this)))
-                .dimensions(this.width / 2 - 100 + 205, this.height / 4 + 72, 100, 20).build()
+                .dimensions(this.width / 2 - 100 + 205, this.height / 4 + 82, 100, 20).build()
         );
     }
 

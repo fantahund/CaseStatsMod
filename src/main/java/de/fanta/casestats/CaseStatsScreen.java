@@ -3,6 +3,7 @@ package de.fanta.casestats;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.ProfileResult;
+import de.fanta.casestats.config.ConfigGui;
 import de.fanta.casestats.data.CaseItem;
 import de.fanta.casestats.data.CaseStat;
 import net.fabricmc.api.EnvType;
@@ -79,7 +80,12 @@ public class CaseStatsScreen extends Screen {
         }
         this.addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE,
                         (button) -> this.client.setScreen(this.parent))
-                .dimensions(this.width / 2 - 100, this.height - 28, 200, 20).build()
+                .dimensions(this.width / 2 - 100, this.height - 28, 100, 20).build()
+        );
+
+        this.addDrawableChild(ButtonWidget.builder(Text.literal("Settings"),
+                        (button) -> this.client.setScreen(new ConfigGui()))
+                .dimensions(this.width / 2 - 0, this.height - 28, 100, 20).build()
         );
     }
 
