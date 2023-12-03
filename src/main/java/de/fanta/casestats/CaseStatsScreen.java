@@ -6,6 +6,7 @@ import com.mojang.authlib.yggdrasil.ProfileResult;
 import de.fanta.casestats.config.ConfigGui;
 import de.fanta.casestats.data.CaseItem;
 import de.fanta.casestats.data.CaseStat;
+import de.fanta.casestats.data.Stats;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -32,7 +33,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Environment(EnvType.CLIENT)
 public class CaseStatsScreen extends Screen {
@@ -47,7 +51,7 @@ public class CaseStatsScreen extends Screen {
     protected final Screen parent;
     private CaseStatsListWidget caseStats;
     private CaseStats caseStatsMod;
-    private de.fanta.casestats.data.Stats stat;
+    private Stats cachedStats;
 
     @Nullable
     private AlwaysSelectedEntryListWidget<?> selectedList;
@@ -62,14 +66,25 @@ public class CaseStatsScreen extends Screen {
     protected void init() {
         // Request data //TODO: Connect to global server -> sync local changes -> fetch remote data :Access Key required:
         this.downloadingStats = false;
-        this.stat = caseStatsMod.stats();
+        this.cachedStats = new Stats();
+
+        caseStatsMod.getConnectionAPI().getServer("casestatsserver").sendData("TEST", new byte[] {});
+        CaseStats.LOGGER.info("Receive Data:");
+        Future<List<CaseStat>> statsFuture = caseStatsMod.getGlobalDataRequestManager().makeRequest(CaseStatsGlobalDataRequestType.GET_CASES, caseStatsMod.getConnectionAPI().getServer("casestatsserver"), new Object[0]);
+        try {
+            CaseStats.LOGGER.info("Receiving Data...");
+            List<CaseStat> stats = statsFuture.get(10, TimeUnit.SECONDS);
+            CaseStats.LOGGER.info("Received Data!");
+            for (CaseStat stat : stats) {
+                cachedStats.add(stat);
+            }
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+
         this.createLists();
         this.createButtons();
         this.selectStatList(this.caseStats);
-        
-        Future<List<CaseStat>> statsFuture = caseStatsMod.getGlobalDataRequestManager().makeRequest(CaseStatsGlobalDataRequestType.GET_CASE_STATS, List<UUID>);
-        List<CaseStats> stats =  statsFuture.get();
-        
     }
 
     public void createLists() {
@@ -78,7 +93,7 @@ public class CaseStatsScreen extends Screen {
 
     public void createButtons() {
         int i = 0;
-        for (CaseStat caseStat : caseStatsMod.stats().caseStats()) {
+        for (CaseStat caseStat : cachedStats.caseStats()) {
             this.addDrawableChild(new ItemStackButtonWidget(this.width / 2 - i * 22, this.height - 52, 20, 20, caseStat.icon(), button -> {
                 caseStats.setSelectedCaseStat(caseStat);
             }));
@@ -205,7 +220,7 @@ public class CaseStatsScreen extends Screen {
 
             totalOccurrences = new HashMap<>();
 
-            selectedCase = caseStatsMod.stats().caseStats().stream().findFirst().orElse(null);
+            selectedCase = cachedStats.caseStats().stream().findFirst().orElse(null);
             setSelectedCaseStat(selectedCase);
         }
 

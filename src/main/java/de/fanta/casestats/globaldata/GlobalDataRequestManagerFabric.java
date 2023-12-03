@@ -1,6 +1,7 @@
 package de.fanta.casestats.globaldata;
 
 import de.cubeside.connection.GlobalServer;
+import de.cubeside.connection.event.GlobalDataCallback;
 
 import java.io.DataInputStream;
 import java.io.IOException;

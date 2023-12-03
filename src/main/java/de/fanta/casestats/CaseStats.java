@@ -18,7 +18,6 @@ public class CaseStats implements ClientModInitializer {
     public static final String MODID = "CaseStats";
     public static final Logger LOGGER = LogManager.getLogger(MODID);
     private ConnectionAPI connectionAPI;
-    private Stats stats;
     private CaseStatsGlobalDataRequestManager globalDataRequestManager;
     private CaseStatsGlobalDataHelper globalDataHelper;
     private static File configDirectory;
@@ -31,9 +30,6 @@ public class CaseStats implements ClientModInitializer {
             configDirectory.mkdirs();
         }
         Configs.loadFromFile();
-
-
-        stats = new Stats();
 
         Events events = new Events();
         events.init();
@@ -58,10 +54,6 @@ public class CaseStats implements ClientModInitializer {
 
     public ConnectionAPI getConnectionAPI() {
         return connectionAPI;
-    }
-
-    public Stats stats() {
-        return stats;
     }
 
     public CaseStatsGlobalDataRequestManager getGlobalDataRequestManager() {

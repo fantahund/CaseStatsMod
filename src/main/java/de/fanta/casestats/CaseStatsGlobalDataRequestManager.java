@@ -1,16 +1,22 @@
 package de.fanta.casestats;
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import de.cubeside.connection.GlobalServer;
+import de.cubeside.connection.event.GlobalDataCallback;
+import de.fanta.casestats.data.CaseStat;
 import de.fanta.casestats.globaldata.GlobalDataRequestManagerFabric;
-import org.yaml.snakeyaml.Yaml;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.Identifier;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerFabric<CaseStatsGlobalDataRequestType> {
 
@@ -46,15 +52,47 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
 
     @Override
     protected Object handleResponse(CaseStatsGlobalDataRequestType messageType, GlobalServer globalServer, DataInputStream dataInputStream) throws IOException {
+        CaseStats.LOGGER.info("Get data from " + messageType);
         switch (messageType) {
             case GET_CASE_STATS-> {
-                String yamlString = dataInputStream.readUTF();
+                /*String yamlString = dataInputStream.readUTF();
                 Yaml yaml = new Yaml();
                 Map<String, Object> config = yaml.load(yamlString);
-                return config.get("result");
+                return config.get("result");*/
+            }
+            case GET_CASES -> {
+                int size = dataInputStream.readInt();
+                CaseStats.LOGGER.info("  Cases: " + size);
+                List<CaseStat> caseStats = new ArrayList<>(size);
+                for (int i = 0; i < size; i++) {
+                    String id = dataInputStream.readUTF();
+
+                    Item item = Registries.ITEM.get(Identifier.tryParse(dataInputStream.readUTF()));
+                    String itemNBT = dataInputStream.readUTF();
+
+                    CaseStat caseStat = new CaseStat(id, createItemStack(item, 1, itemNBT));
+                    caseStats.add(caseStat);
+                }
+                CaseStats.LOGGER.info("  Read Cases: " + caseStats);
+                return caseStats;
             }
             default-> throw new AssertionError("unknown message type " + messageType);
         }
         return null;
+    }
+
+    private static ItemStack createItemStack(Item item, int amount, String itemString) {
+        ItemStack stack = new ItemStack(item, amount);
+        NbtCompound nbtCompound = null;
+        try {
+            nbtCompound = StringNbtReader.parse(itemString);
+        } catch (CommandSyntaxException e) {
+            CaseStats.LOGGER.error("nbtCompound could not be parse.", e);
+        }
+
+        if (nbtCompound != null) {
+            stack.setNbt(nbtCompound);
+        }
+        return stack;
     }
 }

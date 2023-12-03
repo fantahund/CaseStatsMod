@@ -78,20 +78,5 @@ public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannel
             CaseStats.LOGGER.warn("Unable to read CaseStats data", e);
         }
     }
-
-    private static ItemStack createItemStack(Item item, int amount, String itemString) {
-        ItemStack stack = new ItemStack(item, amount);
-        NbtCompound nbtCompound = null;
-        try {
-            nbtCompound = StringNbtReader.parse(itemString);
-        } catch (CommandSyntaxException e) {
-            CaseStats.LOGGER.error("nbtCompound could not be parse.", e);
-        }
-
-        if (nbtCompound != null) {
-            stack.setNbt(nbtCompound);
-        }
-        return stack;
-    }
 }
 

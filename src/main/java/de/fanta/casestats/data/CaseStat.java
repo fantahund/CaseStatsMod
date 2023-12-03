@@ -8,7 +8,6 @@ public class CaseStat {
 
     private final String id;
     private final ItemStack icon;
-    private String name;
 
     private final Map<UUID, PlayerStat> playerStats;
 
