@@ -28,9 +28,11 @@ import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Future;
 
 @Environment(EnvType.CLIENT)
 public class CaseStatsScreen extends Screen {
@@ -64,6 +66,10 @@ public class CaseStatsScreen extends Screen {
         this.createLists();
         this.createButtons();
         this.selectStatList(this.caseStats);
+        
+        Future<List<CaseStat>> statsFuture = caseStatsMod.getGlobalDataRequestManager().makeRequest(CaseStatsGlobalDataRequestType.GET_CASE_STATS, List<UUID>);
+        List<CaseStats> stats =  statsFuture.get();
+        
     }
 
     public void createLists() {

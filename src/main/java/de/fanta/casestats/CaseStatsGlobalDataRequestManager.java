@@ -2,12 +2,14 @@ package de.fanta.casestats;
 
 import de.cubeside.connection.GlobalServer;
 import de.fanta.casestats.globaldata.GlobalDataRequestManagerFabric;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerFabric<CaseStatsGlobalDataRequestType> {
@@ -31,7 +33,7 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
             return;
         }*/
 
-        switch (messageType) {
+        /*switch (messageType) {
             case GET_ITEM_INFO:
                 List<String> itemInfo = List.of("Hallo", "fanta");
                 Object[] message = new Object[itemInfo.size() + 1];
@@ -39,19 +41,19 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
                 System.arraycopy(itemInfo.toArray(), 0, message, 1, itemInfo.size());
                 this.sendMsgParts(dataOutputStream, message);
                 break;
-        }
+        }*/
     }
 
     @Override
     protected Object handleResponse(CaseStatsGlobalDataRequestType messageType, GlobalServer globalServer, DataInputStream dataInputStream) throws IOException {
         switch (messageType) {
-            case GET_ITEM_INFO:
-                int count = dataInputStream.readInt();
-                List<String> itemInfo = new ArrayList<>();
-                for (int i = 0; i < count; i++) {
-                    itemInfo.add(dataInputStream.readUTF());
-                }
-                return itemInfo;
+            case GET_CASE_STATS-> {
+                String yamlString = dataInputStream.readUTF();
+                Yaml yaml = new Yaml();
+                Map<String, Object> config = yaml.load(yamlString);
+                return config.get("result");
+            }
+            default-> throw new AssertionError("unknown message type " + messageType);
         }
         return null;
     }
