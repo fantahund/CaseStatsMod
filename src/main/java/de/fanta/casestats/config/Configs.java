@@ -10,6 +10,7 @@ import fi.dy.masa.malilib.config.IConfigBase;
 import fi.dy.masa.malilib.config.IConfigHandler;
 import fi.dy.masa.malilib.config.options.ConfigStringList;
 import fi.dy.masa.malilib.util.JsonUtils;
+import net.minecraft.client.MinecraftClient;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -21,7 +22,7 @@ public class Configs implements IConfigHandler {
     private static final int CONFIG_VERSION = 1;
 
     public static class Generic {
-        public static final ConfigStringList StatsPlayer = new ConfigStringList("StatsPlayer", ImmutableList.of(), "Get Stats from Player");
+        public static final ConfigStringList StatsPlayer = new ConfigStringList("StatsPlayer", ImmutableList.of(MinecraftClient.getInstance().getGameProfile().getName()), "Get Stats from Player");
         public static final ImmutableList<IConfigBase> OPTIONS = ImmutableList.of(
                 StatsPlayer
         );
@@ -64,7 +65,7 @@ public class Configs implements IConfigHandler {
 
             JsonUtils.writeJsonToFile(root, new File(dir, CONFIG_FILE_NAME));
 
-            CaseStats.LOGGER.info("[CubesideMod] Config Saved");
+            CaseStats.LOGGER.info("[CaseStats] Config Saved");
         }
     }
 

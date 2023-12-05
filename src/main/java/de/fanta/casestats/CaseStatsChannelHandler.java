@@ -1,20 +1,11 @@
 package de.fanta.casestats;
 
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import de.cubeside.connection.GlobalConnectionFabricClient;
-import de.fanta.casestats.data.CaseItem;
-import de.fanta.casestats.data.CaseStat;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.StringNbtReader;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.registry.Registries;
-import net.minecraft.text.MutableText;
 import net.minecraft.util.Identifier;
 
 public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannelHandler {
@@ -38,32 +29,8 @@ public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannel
             if (caseStatsDateChannel == caseOpenDataChannelID && caseStatsDateChannelVersion == 0) {
                 if (packet.hasArray()) {
                     byte[] data = packet.array();
-                    CaseStats.LOGGER.info("Send Data to server: " + data.length);
                     caseStats.getGlobalDataHelper().sendCaseData(data);
                 }
-//                String caseId = packet.readString();
-//                Item cItem = Registries.ITEM.get(Identifier.tryParse(packet.readString()));
-//                String caseItemString = packet.readString();
-//
-//                CaseStat stat = caseStats.stats().caseStatOf(caseId).orElseGet(() -> {
-//                    ItemStack caseStack = createItemStack(cItem, 1, caseItemString);
-//                    CaseStat caseStat = new CaseStat(caseId, caseStack);
-//                    caseStats.stats().add(caseStat);
-//                    return caseStat;
-//                });
-//                //CaseStats.LOGGER.info("Got CaseStat: " + caseId + " = " + stat.icon() + " " + stat.icon().getNbt());
-//
-//                int slots = packet.readInt();
-//                for (int i = 0; i < slots; i++) {
-//                    Item item = Registries.ITEM.get(Identifier.tryParse(packet.readString()));
-//                    int amount = packet.readInt();
-//                    String itemString = packet.readString();
-//
-//                    ItemStack stack = createItemStack(item, amount, itemString);
-//                    CaseItem caseItem1 = new CaseItem(stack, item, amount, (MutableText) stack.getName(), stack.hasEnchantments());
-//
-//                    stat.addItemOccurrence(client.player.getUuid(), caseItem1);
-//                }
             }
 
             if (caseStatsDateChannel == loginGlobalClientChannelID) {
@@ -71,7 +38,6 @@ public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannel
                 String passwort = packet.readString();
                 String ipString = packet.readString();
                 int port = packet.readInt();
-                CaseStats.LOGGER.info("UUID: " + uuid + " Passwort: " + passwort + " IP: " + ipString + " Port: " + port);
                 GlobalConnectionFabricClient.getInstance().loginClientAndWriteConfig(ipString, port, uuid, passwort);
             }
         } catch (Exception e) {

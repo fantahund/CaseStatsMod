@@ -12,7 +12,7 @@ import fi.dy.masa.malilib.util.StringUtils;
 import java.util.Collections;
 import java.util.List;
 
-public class ConfigGui extends GuiConfigsBase { //GuiBase.openGui(new ConfigGui()); <-- Open GUI
+public class ConfigGui extends GuiConfigsBase {
     private static ConfigGuiTab tab = ConfigGuiTab.GENERIC;
 
     public ConfigGui() {

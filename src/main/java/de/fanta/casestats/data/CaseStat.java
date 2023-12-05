@@ -25,8 +25,8 @@ public class CaseStat {
         return icon;
     }
 
-    public void addItemOccurrence(UUID uuid, CaseItem caseItem) {
-        playerStats.computeIfAbsent(uuid, PlayerStat::new).addOccurrence(caseItem);
+    public void setItemOccurrence(UUID uuid, CaseItem caseItem, int count) {
+        playerStats.computeIfAbsent(uuid, PlayerStat::new).setOccurrence(caseItem, count);
     }
 
     public Collection<PlayerStat> playerStats() {
@@ -41,10 +41,6 @@ public class CaseStat {
         public PlayerStat(UUID uuid) {
             this.uuid = uuid;
             this.occurrences = new HashMap<>();
-        }
-
-        public void addOccurrence(CaseItem caseItem) {
-            occurrences.compute(caseItem, (uuid, curr) -> curr == null ? 1 : ++curr);
         }
 
         public void setOccurrence(CaseItem caseItem, int occurrence) {

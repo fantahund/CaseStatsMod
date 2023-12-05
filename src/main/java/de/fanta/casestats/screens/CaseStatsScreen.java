@@ -1,11 +1,15 @@
-package de.fanta.casestats;
+package de.fanta.casestats.screens;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.ProfileResult;
+import de.fanta.casestats.CaseStats;
+import de.fanta.casestats.CaseStatsGlobalDataRequestType;
 import de.fanta.casestats.config.ConfigGui;
+import de.fanta.casestats.config.Configs;
 import de.fanta.casestats.data.CaseItem;
 import de.fanta.casestats.data.CaseStat;
+import de.fanta.casestats.data.PlayerCaseItemStat;
 import de.fanta.casestats.data.Stats;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -20,9 +24,10 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.screen.ScreenTexts;
-import net.minecraft.stat.Stat;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
+import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.Nullable;
 
 import java.text.DecimalFormat;
@@ -31,12 +36,15 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import static net.minecraft.client.gui.screen.StatsListener.PROGRESS_BAR_STAGES;
 
 @Environment(EnvType.CLIENT)
 public class CaseStatsScreen extends Screen {
@@ -64,23 +72,23 @@ public class CaseStatsScreen extends Screen {
     }
 
     protected void init() {
-        // Request data //TODO: Connect to global server -> sync local changes -> fetch remote data :Access Key required:
-        this.downloadingStats = false;
+        this.downloadingStats = true;
         this.cachedStats = new Stats();
 
-        caseStatsMod.getConnectionAPI().getServer("casestatsserver").sendData("TEST", new byte[] {});
-        CaseStats.LOGGER.info("Receive Data:");
         Future<List<CaseStat>> statsFuture = caseStatsMod.getGlobalDataRequestManager().makeRequest(CaseStatsGlobalDataRequestType.GET_CASES, caseStatsMod.getConnectionAPI().getServer("casestatsserver"), new Object[0]);
-        try {
-            CaseStats.LOGGER.info("Receiving Data...");
-            List<CaseStat> stats = statsFuture.get(10, TimeUnit.SECONDS);
-            CaseStats.LOGGER.info("Received Data!");
+        Thread thread = new Thread(() -> {
+            List<CaseStat> stats;
+            try {
+                stats = statsFuture.get(10, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                throw new RuntimeException(e);
+            }
             for (CaseStat stat : stats) {
                 cachedStats.add(stat);
             }
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
+            onStatsReady();
+        });
+        thread.start();
 
         this.createLists();
         this.createButtons();
@@ -95,7 +103,38 @@ public class CaseStatsScreen extends Screen {
         int i = 0;
         for (CaseStat caseStat : cachedStats.caseStats()) {
             this.addDrawableChild(new ItemStackButtonWidget(this.width / 2 - i * 22, this.height - 52, 20, 20, caseStat.icon(), button -> {
-                caseStats.setSelectedCaseStat(caseStat);
+
+                downloadingStats = true;
+                List<String> names = Configs.Generic.StatsPlayer.getStrings();
+                Object[] data = new Object[names.size() + 2];
+                data[0] = caseStat.id();
+                data[1] = names.size();
+                int index = 2;
+                for (String name : names) {
+                    data[index] = name;
+                    index++;
+                }
+
+                Future<List<PlayerCaseItemStat>> statsFuture = caseStatsMod.getGlobalDataRequestManager().makeRequest(CaseStatsGlobalDataRequestType.GET_CASE_STATS, caseStatsMod.getConnectionAPI().getServer("casestatsserver"), data);
+                Thread thread = new Thread(() -> {
+                    List<PlayerCaseItemStat> stats;
+                    try {
+                        stats = statsFuture.get(10, TimeUnit.SECONDS);
+                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                        onStatsReady();
+                        CaseStats.LOGGER.log(Level.ERROR, "", e);
+                        return;
+                    }
+                    for (PlayerCaseItemStat stat : stats) {
+                        caseStat.setItemOccurrence(stat.player(), stat.caseItem(), stat.count());
+                    }
+
+                    if (downloadingStats) {
+                        caseStats.setSelectedCaseStat(caseStat);
+                        downloadingStats = false;
+                    }
+                });
+                thread.start();
             }));
             i++;
         }
@@ -112,14 +151,14 @@ public class CaseStatsScreen extends Screen {
 
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         if (this.downloadingStats) {
-//            this.renderBackground(context, mouseX, mouseY, delta);
-//            context.drawCenteredTextWithShadow(this.textRenderer, DOWNLOADING_STATS_TEXT, this.width / 2, this.height / 2, 16777215);
-//            TextRenderer var10001 = this.textRenderer;
-//            String var10002 = PROGRESS_BAR_STAGES[(int) (Util.getMeasuringTimeMs() / 150L % (long) PROGRESS_BAR_STAGES.length)];
-//            int var10003 = this.width / 2;
-//            int var10004 = this.height / 2;
-//            Objects.requireNonNull(this.textRenderer);
-//            context.drawCenteredTextWithShadow(var10001, var10002, var10003, var10004 + 9 * 2, 16777215);
+            this.renderBackground(context, mouseX, mouseY, delta);
+            context.drawCenteredTextWithShadow(this.textRenderer, DOWNLOADING_STATS_TEXT, this.width / 2, this.height / 2, 16777215);
+            TextRenderer var10001 = this.textRenderer;
+            String var10002 = PROGRESS_BAR_STAGES[(int) (Util.getMeasuringTimeMs() / 150L % (long) PROGRESS_BAR_STAGES.length)];
+            int var10003 = this.width / 2;
+            int var10004 = this.height / 2;
+            Objects.requireNonNull(this.textRenderer);
+            context.drawCenteredTextWithShadow(var10001, var10002, var10003, var10004 + 9 * 2, 16777215);
         } else {
             super.render(context, mouseX, mouseY, delta);
             this.getSelectedStatList().render(context, mouseX, mouseY, delta);
@@ -162,11 +201,6 @@ public class CaseStatsScreen extends Screen {
 
     }
 
-    static String getStatTranslationKey(Stat<Identifier> stat) {
-        String var10000 = stat.getValue().toString();
-        return "stat." + var10000.replace(':', '.');
-    }
-
     int getColumnX(int index) {
         return 115 + 40 * index;
     }
@@ -188,6 +222,7 @@ public class CaseStatsScreen extends Screen {
     private static Optional<GameProfile> fetchProfile(UUID uuid) {
         if (CACHED_USER_PROFILES.containsKey(uuid)) return Optional.ofNullable(CACHED_USER_PROFILES.get(uuid));
 
+
         MinecraftSessionService service = MinecraftClient.getInstance().getSessionService();
         ProfileResult result = service.fetchProfile(uuid, false);
         if (result != null) {
@@ -200,14 +235,6 @@ public class CaseStatsScreen extends Screen {
 
     @Environment(EnvType.CLIENT)
     private class CaseStatsListWidget extends AlwaysSelectedEntryListWidget<CaseStatsListWidget.Entry> {
-        private final Identifier[] headerIconTextures = new Identifier[]{
-                new Identifier("statistics/block_mined"),
-                new Identifier("statistics/item_broken"),
-                new Identifier("statistics/item_crafted"),
-                new Identifier("statistics/item_used"),
-                new Identifier("statistics/item_picked_up"),
-                new Identifier("statistics/item_dropped")
-        };
         protected int selectedHeaderColumn = -1;
         protected CaseStat selectedCase = null;
         protected Map<CaseItem, Integer> totalOccurrences;
@@ -323,19 +350,16 @@ public class CaseStatsScreen extends Screen {
                     }
                     context.drawItemTooltip(CaseStatsScreen.this.textRenderer, entry.getItem().stack(), mouseX, mouseY);
                 } else {
-                    Text text = null;
                     int j = mouseX - i;
 
-                    for (int k = 0; k < this.headerIconTextures.length; ++k) {
+                    int k = 2;
+                    for (CaseStat.PlayerStat playerStat : selectedCase.playerStats()) {
                         int l = CaseStatsScreen.this.getColumnX(k);
                         if (j >= l - 18 && j <= l) {
-                            text = Text.literal("GG");
+                            fetchProfile(playerStat.uuid()).ifPresent(gameProfile -> context.drawTooltip(CaseStatsScreen.this.textRenderer, Text.literal(gameProfile.getName()), mouseX, mouseY));
                             break;
                         }
-                    }
-
-                    if (text != null) {
-                        context.drawTooltip(CaseStatsScreen.this.textRenderer, text, mouseX, mouseY);
+                        k++;
                     }
                 }
 
@@ -427,7 +451,7 @@ public class CaseStatsScreen extends Screen {
             }
 
             public Text getNarration() {
-                return Text.translatable("narrator.select", this.item.name());
+                return Text.translatable("narrator.select", this.item.stack());
             }
         }
     }

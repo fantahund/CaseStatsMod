@@ -1,6 +1,6 @@
 package de.fanta.casestats.mixin;
 
-import de.fanta.casestats.CaseStatsScreen;
+import de.fanta.casestats.screens.CaseStatsScreen;
 import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;

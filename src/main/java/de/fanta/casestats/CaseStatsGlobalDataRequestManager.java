@@ -2,8 +2,9 @@ package de.fanta.casestats;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import de.cubeside.connection.GlobalServer;
-import de.cubeside.connection.event.GlobalDataCallback;
+import de.fanta.casestats.data.CaseItem;
 import de.fanta.casestats.data.CaseStat;
+import de.fanta.casestats.data.PlayerCaseItemStat;
 import de.fanta.casestats.globaldata.GlobalDataRequestManagerFabric;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -55,10 +56,19 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
         CaseStats.LOGGER.info("Get data from " + messageType);
         switch (messageType) {
             case GET_CASE_STATS-> {
-                /*String yamlString = dataInputStream.readUTF();
-                Yaml yaml = new Yaml();
-                Map<String, Object> config = yaml.load(yamlString);
-                return config.get("result");*/
+                List<PlayerCaseItemStat> playerCaseItemStats = new ArrayList<>();
+                int size = dataInputStream.readInt();
+                for (int i = 0; i < size; i++) {
+                    String uuid = dataInputStream.readUTF();
+                    String itemId = dataInputStream.readUTF();
+                    Item item = Registries.ITEM.get(Identifier.tryParse(dataInputStream.readUTF()));
+                    String itemNBT = dataInputStream.readUTF();
+                    int amount = dataInputStream.readInt();
+                    int count = dataInputStream.readInt();
+                    CaseItem caseItem = new CaseItem(itemId, createItemStack(item, amount, itemNBT));
+                    playerCaseItemStats.add(new PlayerCaseItemStat(UUID.fromString(uuid), caseItem, count));
+                }
+                return playerCaseItemStats;
             }
             case GET_CASES -> {
                 int size = dataInputStream.readInt();
@@ -78,7 +88,6 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
             }
             default-> throw new AssertionError("unknown message type " + messageType);
         }
-        return null;
     }
 
     private static ItemStack createItemStack(Item item, int amount, String itemString) {

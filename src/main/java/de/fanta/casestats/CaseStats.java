@@ -4,7 +4,6 @@ import de.cubeside.connection.ConnectionAPI;
 import de.cubeside.connection.GlobalClientFabric;
 import de.cubeside.connection.event.GlobalServerConnectedCallback;
 import de.fanta.casestats.config.Configs;
-import de.fanta.casestats.data.Stats;
 import fi.dy.masa.malilib.util.FileUtils;
 import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.MinecraftClient;
@@ -30,9 +29,6 @@ public class CaseStats implements ClientModInitializer {
             configDirectory.mkdirs();
         }
         Configs.loadFromFile();
-
-        Events events = new Events();
-        events.init();
 
         new CaseStatsChannelHandler(this);
         GlobalServerConnectedCallback.EVENT.register(server -> {
