@@ -25,6 +25,6 @@
     "fabric": "*",
     "minecraft": "${minecraft_version}",
     "globalconnectionfabricclient": "*",
-    "malilib": ">=0.17.0"
+    "malilib": "0.18.0-beta.2"
   }
 }

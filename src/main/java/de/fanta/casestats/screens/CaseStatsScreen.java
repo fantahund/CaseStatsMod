@@ -243,7 +243,7 @@ public class CaseStatsScreen extends Screen {
         protected int listOrder;
 
         public CaseStatsListWidget(MinecraftClient client) {
-            super(client, CaseStatsScreen.this.width, CaseStatsScreen.this.height, 32, CaseStatsScreen.this.height - 64, 20);
+            super(client, CaseStatsScreen.this.width, CaseStatsScreen.this.height - 96, 32, 20);
 
             totalOccurrences = new HashMap<>();
 
@@ -341,7 +341,7 @@ public class CaseStatsScreen extends Screen {
 //        }
 
         protected void renderDecorations(DrawContext context, int mouseX, int mouseY) {
-            if (mouseY >= this.top && mouseY <= this.bottom) {
+            if (mouseY >= this.getY() && mouseY <= this.getBottom()) {
                 CaseStatsListWidget.Entry entry = this.getHoveredEntry();
                 int i = (this.width - this.getRowWidth()) / 2;
                 if (entry != null) {
@@ -465,20 +465,21 @@ public class CaseStatsScreen extends Screen {
             this.stack = stack;
         }
 
-        @Override
+        /*@Override
         protected void renderButton(DrawContext context, int mouseX, int mouseY, float delta) {
             super.renderButton(context, mouseX, mouseY, delta);
             context.drawItem(stack, getX() + 2, getY() + 2);
-        }
+        }*/
 
         @Override
-        public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-            super.render(context, mouseX, mouseY, delta);
+        public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+            super.renderWidget(context, mouseX, mouseY, delta);
 
             boolean bl = this.hovered || this.isFocused() && MinecraftClient.getInstance().getNavigationType().isKeyboard();
             if (bl) {
                 context.drawItemTooltip(MinecraftClient.getInstance().textRenderer, stack, mouseX, mouseY);
             }
+            context.drawItem(stack, getX() + 2, getY() + 2);
         }
 
         @Override
