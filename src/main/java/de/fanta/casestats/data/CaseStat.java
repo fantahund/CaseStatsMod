@@ -10,11 +10,15 @@ public class CaseStat {
     private final ItemStack icon;
 
     private final Map<UUID, PlayerStat> playerStats;
+    private final Map<CaseItem, Integer> totals;
+    private int total;
 
     public CaseStat(String id, ItemStack icon) {
         this.id = id;
         this.icon = icon;
         this.playerStats = new HashMap<>();
+        this.totals = new HashMap<>();
+        this.total = 0;
     }
 
     public String id() {
@@ -26,7 +30,17 @@ public class CaseStat {
     }
 
     public void setItemOccurrence(UUID uuid, CaseItem caseItem, int count) {
+        total += count;
+        totals.compute(caseItem, (caseItem1, value) -> value == null ? count : value + count);
         playerStats.computeIfAbsent(uuid, PlayerStat::new).setOccurrence(caseItem, count);
+    }
+
+    public int total() {
+        return total;
+    }
+
+    public Map<CaseItem, Integer> totals() {
+        return totals;
     }
 
     public Collection<PlayerStat> playerStats() {
@@ -37,6 +51,7 @@ public class CaseStat {
 
         private final UUID uuid;
         private final Map<CaseItem, Integer> occurrences;
+        private int total = 0;
 
         public PlayerStat(UUID uuid) {
             this.uuid = uuid;
@@ -44,6 +59,7 @@ public class CaseStat {
         }
 
         public void setOccurrence(CaseItem caseItem, int occurrence) {
+            total += occurrence;
             occurrences.put(caseItem, occurrence);
         }
 
@@ -53,6 +69,10 @@ public class CaseStat {
 
         public Set<Map.Entry<CaseItem, Integer>> occurrences() {
             return occurrences.entrySet();
+        }
+
+        public int total() {
+            return total;
         }
 
         @Override

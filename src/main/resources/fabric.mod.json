@@ -6,7 +6,7 @@
   "description": "",
   "authors": [],
   "contact": {
-    "repo": "https://github.com/Tobi/CaseStats"
+    "repo": "https://github.com/fantahund/CaseStats"
   },
   "license": "MIT",
   "icon": "assets/casestats/icon.png",
@@ -25,6 +25,6 @@
     "fabric": "*",
     "minecraft": "${minecraft_version}",
     "globalconnectionfabricclient": "*",
-    "malilib": "0.18.0-beta.2"
+    "malilib": ">=0.18.0"
   }
 }

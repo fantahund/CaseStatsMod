@@ -19,6 +19,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -71,6 +72,7 @@ public class CaseStatsScreen extends Screen {
         this.caseStatsMod = CaseStats.getInstance();
     }
 
+    @Override
     protected void init() {
         this.downloadingStats = true;
         this.cachedStats = new Stats();
@@ -90,9 +92,9 @@ public class CaseStatsScreen extends Screen {
         });
         thread.start();
 
-        this.createLists();
-        this.createButtons();
-        this.selectStatList(this.caseStats);
+//        this.createLists();
+//        this.createButtons();
+//        this.selectStatList(this.caseStats);
     }
 
     public void createLists() {
@@ -103,38 +105,9 @@ public class CaseStatsScreen extends Screen {
         int i = 0;
         for (CaseStat caseStat : cachedStats.caseStats()) {
             this.addDrawableChild(new ItemStackButtonWidget(this.width / 2 - i * 22, this.height - 52, 20, 20, caseStat.icon(), button -> {
-
-                downloadingStats = true;
-                List<String> names = Configs.Generic.StatsPlayer.getStrings();
-                Object[] data = new Object[names.size() + 2];
-                data[0] = caseStat.id();
-                data[1] = names.size();
-                int index = 2;
-                for (String name : names) {
-                    data[index] = name;
-                    index++;
+                if (caseStats != null && caseStat != caseStats.selectedCase) {
+                    fetchCaseStats(caseStat);
                 }
-
-                Future<List<PlayerCaseItemStat>> statsFuture = caseStatsMod.getGlobalDataRequestManager().makeRequest(CaseStatsGlobalDataRequestType.GET_CASE_STATS, caseStatsMod.getConnectionAPI().getServer("casestatsserver"), data);
-                Thread thread = new Thread(() -> {
-                    List<PlayerCaseItemStat> stats;
-                    try {
-                        stats = statsFuture.get(10, TimeUnit.SECONDS);
-                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                        onStatsReady();
-                        CaseStats.LOGGER.log(Level.ERROR, "", e);
-                        return;
-                    }
-                    for (PlayerCaseItemStat stat : stats) {
-                        caseStat.setItemOccurrence(stat.player(), stat.caseItem(), stat.count());
-                    }
-
-                    if (downloadingStats) {
-                        caseStats.setSelectedCaseStat(caseStat);
-                        downloadingStats = false;
-                    }
-                });
-                thread.start();
             }));
             i++;
         }
@@ -147,6 +120,40 @@ public class CaseStatsScreen extends Screen {
                         (button) -> this.client.setScreen(new ConfigGui()))
                 .dimensions(this.width / 2 - 0, this.height - 28, 100, 20).build()
         );
+    }
+
+    private void fetchCaseStats(CaseStat caseStat) {
+        downloadingStats = true;
+        List<String> names = Configs.Generic.StatsPlayer.getStrings();
+        Object[] data = new Object[names.size() + 2];
+        data[0] = caseStat.id();
+        data[1] = names.size();
+        int index = 2;
+        for (String name : names) {
+            data[index] = name;
+            index++;
+        }
+
+        Future<List<PlayerCaseItemStat>> statsFuture = caseStatsMod.getGlobalDataRequestManager().makeRequest(CaseStatsGlobalDataRequestType.GET_CASE_STATS, caseStatsMod.getConnectionAPI().getServer("casestatsserver"), data);
+        Thread thread = new Thread(() -> {
+            List<PlayerCaseItemStat> stats;
+            try {
+                stats = statsFuture.get(10, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                onStatsReady();
+                CaseStats.LOGGER.log(Level.ERROR, "", e);
+                return;
+            }
+            for (PlayerCaseItemStat stat : stats) {
+                caseStat.setItemOccurrence(stat.player(), stat.caseItem(), stat.count());
+            }
+
+            if (downloadingStats) {
+                caseStats.setSelectedCaseStat(caseStat);
+                downloadingStats = false;
+            }
+        });
+        thread.start();
     }
 
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
@@ -175,7 +182,11 @@ public class CaseStatsScreen extends Screen {
             this.createLists();
             this.createButtons();
             this.selectStatList(this.caseStats);
-            this.downloadingStats = false;
+            if (caseStats.selectedCase != null) {
+                fetchCaseStats(caseStats.selectedCase);
+            } else {
+                this.downloadingStats = false;
+            }
         }
 
     }
@@ -237,50 +248,45 @@ public class CaseStatsScreen extends Screen {
     private class CaseStatsListWidget extends AlwaysSelectedEntryListWidget<CaseStatsListWidget.Entry> {
         protected int selectedHeaderColumn = -1;
         protected CaseStat selectedCase = null;
-        protected Map<CaseItem, Integer> totalOccurrences;
         protected final ItemComparator comparator = new ItemComparator();
-
+        protected static int customHeaderHeight = 20;
         protected int listOrder;
 
         public CaseStatsListWidget(MinecraftClient client) {
-            super(client, CaseStatsScreen.this.width, CaseStatsScreen.this.height - 96, 32, 20);
-
-            totalOccurrences = new HashMap<>();
-
+            super(client, CaseStatsScreen.this.width, CaseStatsScreen.this.height - customHeaderHeight - 108, 56, 20);
+            setRenderHeader(false, 0);
             selectedCase = cachedStats.caseStats().stream().findFirst().orElse(null);
-            setSelectedCaseStat(selectedCase);
         }
 
         public void setSelectedCaseStat(CaseStat caseStat) {
             clearEntries();
-            totalOccurrences.clear();
             if (caseStat == null) return;
             this.selectedCase = caseStat;
 
+            for (CaseItem caseItem : selectedCase.totals().keySet()) {
+                this.addEntry(new Entry(caseItem));
+            }
+
             Collection<CaseStat.PlayerStat> playerStats = selectedCase.playerStats();
             for (CaseStat.PlayerStat playerStat : playerStats) {
-
                 fetchProfile(playerStat.uuid());
-
-                for (Map.Entry<CaseItem, Integer> occurrence : playerStat.occurrences()) {
-                    totalOccurrences.compute(occurrence.getKey(), (caseItem, value) -> {
-                        if (value == null) {
-                            return occurrence.getValue();
-                        } else {
-                            return value + occurrence.getValue();
-                        }
-                    });
-                    this.addEntry(new Entry(occurrence.getKey()));
-                }
             }
-            this.setRenderHeader(true, 20);
         }
 
+        @Override
+        protected void enableScissor(DrawContext context) {
+            renderHeader(context, getRowLeft(), getY() - customHeaderHeight);
+
+            super.enableScissor(context);
+        }
+
+        @Override
         protected void renderHeader(DrawContext context, int x, int y) {
             if (!this.client.mouse.wasLeftButtonClicked()) {
                 this.selectedHeaderColumn = -1;
             }
 
+            if (selectedCase == null) return;
             Text totalText = Text.literal("Gesamt");
             context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, totalText, x + CaseStatsScreen.this.getColumnX(0) - CaseStatsScreen.this.textRenderer.getWidth(totalText), y + 5, 16777215);
 
@@ -308,6 +314,25 @@ public class CaseStatsScreen extends Screen {
 //                CaseStatsScreen.this.renderIcon(context, x + i, y + 1, identifier);
 //            }
 
+        }
+
+        protected void renderFooter(DrawContext context, int x, int y) {
+            if (selectedCase == null) return;
+            Text total = Text.literal("Gesamt:");
+            context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, total, x + CaseStatsScreen.this.textRenderer.getWidth(total), y + 5, 16777215);
+
+            Text totalText = Text.literal(String.valueOf(selectedCase.total()));
+            context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, totalText, x + CaseStatsScreen.this.getColumnX(0) - CaseStatsScreen.this.textRenderer.getWidth(totalText), y + 5, 16777215);
+
+            Text probText = Text.literal("100%");
+            context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, probText, x + CaseStatsScreen.this.getColumnX(1) - CaseStatsScreen.this.textRenderer.getWidth(probText), y + 5, 16777215);
+
+            int i = 2;
+            for (CaseStat.PlayerStat playerStat : selectedCase.playerStats()) {
+                Text totalPlayerTxt = Text.literal(String.valueOf(playerStat.total()));
+                context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, totalPlayerTxt, x + CaseStatsScreen.this.getColumnX(i) - CaseStatsScreen.this.textRenderer.getWidth(totalPlayerTxt), y + 5, 16777215);
+                i++;
+            }
         }
 
         public int getRowWidth() {
@@ -341,7 +366,9 @@ public class CaseStatsScreen extends Screen {
 //        }
 
         protected void renderDecorations(DrawContext context, int mouseX, int mouseY) {
-            if (mouseY >= this.getY() && mouseY <= this.getBottom()) {
+            renderFooter(context, getRowLeft(), getBottom() + 2);
+
+            if (mouseY >= this.getY() - customHeaderHeight && mouseY <= this.getBottom()) {
                 CaseStatsListWidget.Entry entry = this.getHoveredEntry();
                 int i = (this.width - this.getRowWidth()) / 2;
                 if (entry != null) {
@@ -362,7 +389,6 @@ public class CaseStatsScreen extends Screen {
                         k++;
                     }
                 }
-
             }
         }
 
@@ -424,7 +450,7 @@ public class CaseStatsScreen extends Screen {
             public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
                 CaseStatsScreen.this.renderStatItem(context, x + 40, y, this.item.stack());
                 boolean evenRow = index % 2 == 0;
-                int total = totalOccurrences.getOrDefault(item, 0);
+                int total = selectedCase.totals().getOrDefault(item, 0);
 
                 int i = 2;
                 for (CaseStat.PlayerStat playerStat : selectedCase.playerStats()) {
@@ -435,10 +461,7 @@ public class CaseStatsScreen extends Screen {
 
                 render(context, String.valueOf(total), x + CaseStatsScreen.this.getColumnX(0), y, evenRow);
 
-                int totalCount = 0;
-                for (int caseStat : totalOccurrences.values()) {
-                    totalCount += caseStat;
-                }
+                int totalCount = selectedCase.total();
                 double probability = (double) total / totalCount * 100;
                 DecimalFormat formatter = new DecimalFormat("#,##0.00");
 
@@ -477,7 +500,13 @@ public class CaseStatsScreen extends Screen {
 
             boolean bl = this.hovered || this.isFocused() && MinecraftClient.getInstance().getNavigationType().isKeyboard();
             if (bl) {
+                MatrixStack textMatrixStack = context.getMatrices();
+                textMatrixStack.push();
+                textMatrixStack.loadIdentity();
+                textMatrixStack.translate(0, 0, 900);
                 context.drawItemTooltip(MinecraftClient.getInstance().textRenderer, stack, mouseX, mouseY);
+                textMatrixStack.pop();
+
             }
             context.drawItem(stack, getX() + 2, getY() + 2);
         }
