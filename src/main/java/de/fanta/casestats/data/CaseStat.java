@@ -43,8 +43,8 @@ public class CaseStat {
         return totals;
     }
 
-    public Collection<PlayerStat> playerStats() {
-        return playerStats.values();
+    public Map<UUID, PlayerStat> playerStats() {
+        return playerStats;
     }
 
     public static class PlayerStat {

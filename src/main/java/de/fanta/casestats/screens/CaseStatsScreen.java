@@ -20,6 +20,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -59,7 +60,7 @@ public class CaseStatsScreen extends Screen {
 
     protected final Screen parent;
     private CaseStatsListWidget caseStats;
-    private CaseStats caseStatsMod;
+    private final CaseStats caseStatsMod;
     private Stats cachedStats;
 
     @Nullable
@@ -267,7 +268,7 @@ public class CaseStatsScreen extends Screen {
                 this.addEntry(new Entry(caseItem));
             }
 
-            Collection<CaseStat.PlayerStat> playerStats = selectedCase.playerStats();
+            Collection<CaseStat.PlayerStat> playerStats = selectedCase.playerStats().values();
             for (CaseStat.PlayerStat playerStat : playerStats) {
                 fetchProfile(playerStat.uuid());
             }
@@ -294,7 +295,7 @@ public class CaseStatsScreen extends Screen {
             context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, probText, x + CaseStatsScreen.this.getColumnX(1) - CaseStatsScreen.this.textRenderer.getWidth(probText), y + 5, 16777215);
 
             int i = 2;
-            for (CaseStat.PlayerStat playerStat : selectedCase.playerStats()) {
+            for (CaseStat.PlayerStat playerStat : selectedCase.playerStats().values()) {
                 Identifier identifier = this.selectedHeaderColumn == i ? CaseStatsScreen.SLOT_TEXTURE : CaseStatsScreen.HEADER_TEXTURE;
                 CaseStatsScreen.this.renderIcon(context, x + CaseStatsScreen.this.getColumnX(i) - 18, y + 1, identifier);
 
@@ -328,7 +329,7 @@ public class CaseStatsScreen extends Screen {
             context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, probText, x + CaseStatsScreen.this.getColumnX(1) - CaseStatsScreen.this.textRenderer.getWidth(probText), y + 5, 16777215);
 
             int i = 2;
-            for (CaseStat.PlayerStat playerStat : selectedCase.playerStats()) {
+            for (CaseStat.PlayerStat playerStat : selectedCase.playerStats().values()) {
                 Text totalPlayerTxt = Text.literal(String.valueOf(playerStat.total()));
                 context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, totalPlayerTxt, x + CaseStatsScreen.this.getColumnX(i) - CaseStatsScreen.this.textRenderer.getWidth(totalPlayerTxt), y + 5, 16777215);
                 i++;
@@ -380,7 +381,7 @@ public class CaseStatsScreen extends Screen {
                     int j = mouseX - i;
 
                     int k = 2;
-                    for (CaseStat.PlayerStat playerStat : selectedCase.playerStats()) {
+                    for (CaseStat.PlayerStat playerStat : selectedCase.playerStats().values()) {
                         int l = CaseStatsScreen.this.getColumnX(k);
                         if (j >= l - 18 && j <= l) {
                             fetchProfile(playerStat.uuid()).ifPresent(gameProfile -> context.drawTooltip(CaseStatsScreen.this.textRenderer, Text.literal(gameProfile.getName()), mouseX, mouseY));
@@ -412,26 +413,21 @@ public class CaseStatsScreen extends Screen {
             }
 
             public int compare(CaseStatsListWidget.Entry entry, CaseStatsListWidget.Entry entry2) {
-//                Item item = entry.getItem();
-//                Item item2 = entry2.getItem();
-//                int i;
-//                int j;
-//                if (CaseStatsListWidget.this.selectedStatType == null) {
-//                    i = 0;
-//                    j = 0;
+//                CaseItem item = entry.getItem();
+//                CaseItem item2 = entry2.getItem();
+//                int itemStats;
+//                int itemStats2;
+//                if (selectedCase == null) {
+//                    itemStats = 0;
+//                    itemStats2 = 0;
 //                } else {
-//                    StatType statType;
-//                    if (CaseStatsListWidget.this.blockStatTypes.contains(CaseStatsListWidget.this.selectedStatType)) {
-//                        statType = CaseStatsListWidget.this.selectedStatType;
-//                        i = item instanceof BlockItem ? CaseStatsScreen.this.statHandler.getStat(statType, ((BlockItem) item).getBlock()) : -1;
-//                        j = item2 instanceof BlockItem ? CaseStatsScreen.this.statHandler.getStat(statType, ((BlockItem) item2).getBlock()) : -1;
-//                    } else {
-//                        statType = CaseStatsListWidget.this.selectedStatType;
-//                        i = CaseStatsScreen.this.statHandler.getStat(statType, item);
-//                        j = CaseStatsScreen.this.statHandler.getStat(statType, item2);
-//                    }
+//                    UUID selectedPlayer = UUID.randomUUID(); //TODO GETSELECTED
+//                    itemStats = selectedCase.playerStats().get(selectedPlayer).getOccurrence(item);
+//                    itemStats2 = selectedCase.playerStats().get(selectedPlayer).getOccurrence(item2);
 //                }
-                return 0;//i == j ? CaseStatsListWidget.this.listOrder * Integer.compare(Item.getRawId(item), Item.getRawId(item2)) : CaseStatsListWidget.this.listOrder * Integer.compare(i, j);
+//
+//                return itemStats == itemStats2 ? CaseStatsScreen.CaseStatsListWidget.this.listOrder * Integer.compare(Item.getRawId(item.stack().getItem()), Item.getRawId(item2.stack().getItem())) : CaseStatsScreen.CaseStatsListWidget.this.listOrder * Integer.compare(itemStats, itemStats2);
+                return 0;
             }
         }
 
@@ -453,7 +449,7 @@ public class CaseStatsScreen extends Screen {
                 int total = selectedCase.totals().getOrDefault(item, 0);
 
                 int i = 2;
-                for (CaseStat.PlayerStat playerStat : selectedCase.playerStats()) {
+                for (CaseStat.PlayerStat playerStat : selectedCase.playerStats().values()) {
                     int count = playerStat.getOccurrence(item);
                     this.render(context, String.valueOf(count), x + CaseStatsScreen.this.getColumnX(i), y, evenRow);
                     i++;
@@ -469,7 +465,7 @@ public class CaseStatsScreen extends Screen {
             }
 
             protected void render(DrawContext context, String count, int x, int y, boolean white) {
-                Text text = Text.literal(count);
+                Text text = count.equals("0") ? NONE_TEXT : Text.literal(count);
                 context.drawTextWithShadow(CaseStatsScreen.this.textRenderer, text, x - CaseStatsScreen.this.textRenderer.getWidth(text), y + 5, white ? 16777215 : 9474192);
             }
 
