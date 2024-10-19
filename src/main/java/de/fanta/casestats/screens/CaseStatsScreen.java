@@ -47,8 +47,6 @@ import java.util.concurrent.TimeoutException;
 public class CaseStatsScreen extends Screen {
     static final Identifier SLOT_TEXTURE = Identifier.of("container/slot");
     static final Identifier HEADER_TEXTURE = Identifier.of("statistics/header");
-    static final Identifier SORT_UP_TEXTURE = Identifier.of("statistics/sort_up");
-    static final Identifier SORT_DOWN_TEXTURE = Identifier.of("statistics/sort_down");
     private static final Text DOWNLOADING_STATS_TEXT = Text.translatable("multiplayer.downloadingStats");
     private static final String[] PROGRESS_BAR_STAGES = new String[]{"oooooo", "Oooooo", "oOoooo", "ooOooo", "oooOoo", "ooooOo", "oooooO"};
     static final Text NONE_TEXT = Text.translatable("stats.none");
@@ -89,10 +87,6 @@ public class CaseStatsScreen extends Screen {
             onStatsReady();
         });
         thread.start();
-
-//        this.createLists();
-//        this.createButtons();
-//        this.selectStatList(this.caseStats);
     }
 
     public void createLists() {
@@ -304,13 +298,6 @@ public class CaseStatsScreen extends Screen {
                 context.drawItem(itemStack, x + CaseStatsScreen.this.getColumnX(i) - 17, y + 2);
                 i++;
             }
-
-//            if (this.selectedStatType != null) {
-//                i = CaseStatsScreen.this.getColumnX(this.getHeaderIndex(this.selectedStatType)) - 36;
-//                identifier = this.listOrder == 1 ? CaseStatsScreen.SORT_UP_TEXTURE : CaseStatsScreen.SORT_DOWN_TEXTURE;
-//                CaseStatsScreen.this.renderIcon(context, x + i, y + 1, identifier);
-//            }
-
         }
 
         private ItemStack getPlayerHead(UUID uuid) {
@@ -346,32 +333,6 @@ public class CaseStatsScreen extends Screen {
             return 375;
         }
 
-        protected int getScrollbarPositionX() {
-            return this.width / 2 + 140;
-        }
-
-//        protected void clickedHeader(int x, int y) {
-//            this.selectedHeaderColumn = -1;
-//
-//            for (int i = 0; i < this.headerIconTextures.length; ++i) {
-//                int j = x - CaseStatsScreen.this.getColumnX(i);
-//                if (j >= -36 && j <= 0) {
-//                    this.selectedHeaderColumn = i;
-//                    break;
-//                }
-//            }
-//
-//            if (this.selectedHeaderColumn >= 0) {
-//                this.selectStatType(this.getStatType(this.selectedHeaderColumn));
-//                this.client.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-//            }
-//
-//        }
-
-//        private StatType<?> getStatType(int headerColumn) {
-//            return headerColumn < this.blockStatTypes.size() ? this.blockStatTypes.get(headerColumn) : this.itemStatTypes.get(headerColumn - this.blockStatTypes.size());
-//        }
-
         protected void renderDecorations(DrawContext context, int mouseX, int mouseY) {
             renderFooter(context, getRowLeft(), getBottom() + 2);
 
@@ -399,40 +360,12 @@ public class CaseStatsScreen extends Screen {
             }
         }
 
-//        protected void selectStatType(StatType<?> statType) {
-//            if (statType != this.selectedStatType) {
-//                this.selectedStatType = statType;
-//                this.listOrder = -1;
-//            } else if (this.listOrder == -1) {
-//                this.listOrder = 1;
-//            } else {
-//                this.selectedStatType = null;
-//                this.listOrder = 0;
-//            }
-//
-//            this.children().sort(this.comparator);
-//        }
-
         @Environment(EnvType.CLIENT)
         private class ItemComparator implements Comparator<CaseStatsListWidget.Entry> {
             ItemComparator() {
             }
 
             public int compare(CaseStatsListWidget.Entry entry, CaseStatsListWidget.Entry entry2) {
-//                CaseItem item = entry.getItem();
-//                CaseItem item2 = entry2.getItem();
-//                int itemStats;
-//                int itemStats2;
-//                if (selectedCase == null) {
-//                    itemStats = 0;
-//                    itemStats2 = 0;
-//                } else {
-//                    UUID selectedPlayer = UUID.randomUUID(); //TODO GETSELECTED
-//                    itemStats = selectedCase.playerStats().get(selectedPlayer).getOccurrence(item);
-//                    itemStats2 = selectedCase.playerStats().get(selectedPlayer).getOccurrence(item2);
-//                }
-//
-//                return itemStats == itemStats2 ? CaseStatsScreen.CaseStatsListWidget.this.listOrder * Integer.compare(Item.getRawId(item.stack().getItem()), Item.getRawId(item2.stack().getItem())) : CaseStatsScreen.CaseStatsListWidget.this.listOrder * Integer.compare(itemStats, itemStats2);
                 return 0;
             }
         }
@@ -489,12 +422,6 @@ public class CaseStatsScreen extends Screen {
             super(x, y, width, height, Text.empty(), onPress, DEFAULT_NARRATION_SUPPLIER);
             this.stack = stack;
         }
-
-        /*@Override
-        protected void renderButton(DrawContext context, int mouseX, int mouseY, float delta) {
-            super.renderButton(context, mouseX, mouseY, delta);
-            context.drawItem(stack, getX() + 2, getY() + 2);
-        }*/
 
         @Override
         public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
