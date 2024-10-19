@@ -29,6 +29,12 @@ public class CaseStat {
         return icon;
     }
 
+    public void reset() {
+        totals.clear();
+        playerStats.clear();
+        total = 0;
+    }
+
     public void setItemOccurrence(UUID uuid, CaseItem caseItem, int count) {
         total += count;
         totals.compute(caseItem, (caseItem1, value) -> value == null ? count : value + count);
@@ -73,6 +79,11 @@ public class CaseStat {
 
         public int total() {
             return total;
+        }
+
+        public void reset() {
+            total = 0;
+            occurrences.clear();
         }
 
         @Override

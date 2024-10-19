@@ -121,6 +121,10 @@ public class CaseStatsScreen extends Screen {
     }
 
     private void fetchCaseStats(CaseStat caseStat) {
+        cachedStats.caseStats().forEach(caseStat1 -> {
+            caseStat1.reset();
+            caseStat1.playerStats().forEach((uuid, playerStat) -> playerStat.reset());
+        });
         downloadingStats = true;
         List<String> names = Configs.Generic.StatsPlayer.getStrings();
         Object[] data = new Object[names.size() + 2];

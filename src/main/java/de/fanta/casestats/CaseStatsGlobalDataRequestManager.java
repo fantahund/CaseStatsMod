@@ -61,10 +61,11 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
                 for (int i = 0; i < size; i++) {
                     String uuid = dataInputStream.readUTF();
                     String itemId = dataInputStream.readUTF();
+                    String item = dataInputStream.readUTF();
                     String itemNBT = dataInputStream.readUTF();
                     int amount = dataInputStream.readInt();
                     int count = dataInputStream.readInt();
-                    CaseItem caseItem = new CaseItem(itemId, createItemStack(itemId, amount, itemNBT));
+                    CaseItem caseItem = new CaseItem(itemId, createItemStack(item, amount, itemNBT));
                     playerCaseItemStats.add(new PlayerCaseItemStat(UUID.fromString(uuid), caseItem, count));
                 }
                 return playerCaseItemStats;
@@ -74,7 +75,6 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
                 List<CaseStat> caseStats = new ArrayList<>(size);
                 for (int i = 0; i < size; i++) {
                     String id = dataInputStream.readUTF();
-
                     String itemID = dataInputStream.readUTF();
                     String itemNBT = dataInputStream.readUTF();
 

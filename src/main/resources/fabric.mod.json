@@ -23,7 +23,7 @@
   "depends": {
     "fabricloader": "*",
     "fabric": "*",
-    "minecraft": "${minecraft_version}",
+    "minecraft": "*",
     "globalconnectionfabricclient": "*",
     "malilib": ">=0.18.0"
   }
