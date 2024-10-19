@@ -96,21 +96,22 @@ public class CaseStatsScreen extends Screen {
     public void createButtons() {
         int i = 0;
         for (CaseStat caseStat : cachedStats.caseStats()) {
-            this.addDrawableChild(new ItemStackButtonWidget(this.width / 2 - i * 22, this.height - 52, 20, 20, caseStat.icon(), button -> {
+            this.addDrawableChild(new ItemStackButtonWidget(5 + (i * 22), this.height - 50, 20, 20, caseStat.icon(), button -> {
                 if (caseStats != null && caseStat != caseStats.selectedCase) {
                     fetchCaseStats(caseStat);
                 }
             }));
             i++;
         }
+
         this.addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE,
                         (button) -> this.client.setScreen(this.parent))
-                .dimensions(this.width / 2 - 100, this.height - 28, 100, 20).build()
+                .dimensions((this.width / 2) - 50, this.height - 30, 100, 20).build()
         );
 
         this.addDrawableChild(ButtonWidget.builder(Text.literal("Settings"),
                         (button) -> this.client.setScreen(new ConfigGui()))
-                .dimensions(this.width / 2 - 0, this.height - 28, 100, 20).build()
+                .dimensions(this.width - 105, 10, 100, 20).build()
         );
     }
 
@@ -254,6 +255,16 @@ public class CaseStatsScreen extends Screen {
             selectedCase = cachedStats.caseStats().stream().findFirst().orElse(null);
         }
 
+        @Override
+        public int getRowLeft() {
+            return -30;
+        }
+
+        @Override
+        public int getRowWidth() {
+            return CaseStatsScreen.this.width - 30;
+        }
+
         public void setSelectedCaseStat(CaseStat caseStat) {
             clearEntries();
             if (caseStat == null) return;
@@ -329,16 +340,12 @@ public class CaseStatsScreen extends Screen {
             }
         }
 
-        public int getRowWidth() {
-            return 375;
-        }
-
         protected void renderDecorations(DrawContext context, int mouseX, int mouseY) {
             renderFooter(context, getRowLeft(), getBottom() + 2);
 
             if (mouseY >= this.getY() - customHeaderHeight && mouseY <= this.getBottom()) {
                 CaseStatsListWidget.Entry entry = this.getHoveredEntry();
-                int i = (this.width - this.getRowWidth()) / 2;
+                int i = (this.width - this.getRowWidth()) / 2 - 45;
                 if (entry != null) {
                     if (mouseX < i + 40 || mouseX > i + 40 + 20) {
                         return;
