@@ -11,6 +11,7 @@ import de.fanta.casestats.data.CaseItem;
 import de.fanta.casestats.data.CaseStat;
 import de.fanta.casestats.data.PlayerCaseItemStat;
 import de.fanta.casestats.data.Stats;
+import de.iani.cubesideutils.fabric.item.CustomHeadUtil;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -20,11 +21,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -46,15 +43,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static net.minecraft.client.gui.screen.StatsListener.PROGRESS_BAR_STAGES;
-
 @Environment(EnvType.CLIENT)
 public class CaseStatsScreen extends Screen {
-    static final Identifier SLOT_TEXTURE = new Identifier("container/slot");
-    static final Identifier HEADER_TEXTURE = new Identifier("statistics/header");
-    static final Identifier SORT_UP_TEXTURE = new Identifier("statistics/sort_up");
-    static final Identifier SORT_DOWN_TEXTURE = new Identifier("statistics/sort_down");
+    static final Identifier SLOT_TEXTURE = Identifier.of("container/slot");
+    static final Identifier HEADER_TEXTURE = Identifier.of("statistics/header");
+    static final Identifier SORT_UP_TEXTURE = Identifier.of("statistics/sort_up");
+    static final Identifier SORT_DOWN_TEXTURE = Identifier.of("statistics/sort_down");
     private static final Text DOWNLOADING_STATS_TEXT = Text.translatable("multiplayer.downloadingStats");
+    private static final String[] PROGRESS_BAR_STAGES = new String[]{"oooooo", "Oooooo", "oOoooo", "ooOooo", "oooOoo", "ooooOo", "oooooO"};
     static final Text NONE_TEXT = Text.translatable("stats.none");
     private static final Map<UUID, GameProfile> CACHED_USER_PROFILES = new HashMap<>();
 
@@ -62,6 +58,7 @@ public class CaseStatsScreen extends Screen {
     private CaseStatsListWidget caseStats;
     private final CaseStats caseStatsMod;
     private Stats cachedStats;
+    private final HashMap<UUID, ItemStack> playerHeads = new HashMap<>();
 
     @Nullable
     private AlwaysSelectedEntryListWidget<?> selectedList;
@@ -175,7 +172,7 @@ public class CaseStatsScreen extends Screen {
     }
 
     public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
-        this.renderBackgroundTexture(context);
+        this.renderDarkening(context);
     }
 
     public void onStatsReady() {
@@ -299,12 +296,7 @@ public class CaseStatsScreen extends Screen {
                 Identifier identifier = this.selectedHeaderColumn == i ? CaseStatsScreen.SLOT_TEXTURE : CaseStatsScreen.HEADER_TEXTURE;
                 CaseStatsScreen.this.renderIcon(context, x + CaseStatsScreen.this.getColumnX(i) - 18, y + 1, identifier);
 
-                ItemStack itemStack = new ItemStack(Items.PLAYER_HEAD);
-                fetchProfile(playerStat.uuid()).ifPresent(gameProfile -> {
-                    NbtCompound nbt = itemStack.getOrCreateNbt();
-                    nbt.put("SkullOwner", NbtHelper.writeGameProfile(new NbtCompound(), gameProfile));
-                });
-
+                ItemStack itemStack = getPlayerHead(playerStat.uuid());
                 context.drawItem(itemStack, x + CaseStatsScreen.this.getColumnX(i) - 17, y + 2);
                 i++;
             }
@@ -315,6 +307,16 @@ public class CaseStatsScreen extends Screen {
 //                CaseStatsScreen.this.renderIcon(context, x + i, y + 1, identifier);
 //            }
 
+        }
+
+        private ItemStack getPlayerHead(UUID uuid) {
+            if (playerHeads.containsKey(uuid)) {
+                return playerHeads.get(uuid);
+            } else {
+                ItemStack stack = CustomHeadUtil.getPlayerHead(uuid);
+                playerHeads.put(uuid, stack);
+                return stack;
+            }
         }
 
         protected void renderFooter(DrawContext context, int x, int y) {

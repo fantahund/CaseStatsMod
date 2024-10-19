@@ -30,7 +30,7 @@ public class CaseStats implements ClientModInitializer {
         }
         Configs.loadFromFile();
 
-        new CaseStatsChannelHandler(this);
+        new CaseStatsChannelHandler();
         GlobalServerConnectedCallback.EVENT.register(server -> {
             if (server.getName().equals(MinecraftClient.getInstance().getGameProfile().getId().toString())) {
                 onConnectGlobalClient();

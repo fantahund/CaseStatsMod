@@ -1,17 +1,17 @@
 package de.fanta.casestats;
 
+import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import de.cubeside.connection.GlobalServer;
 import de.fanta.casestats.data.CaseItem;
 import de.fanta.casestats.data.CaseStat;
 import de.fanta.casestats.data.PlayerCaseItemStat;
 import de.fanta.casestats.globaldata.GlobalDataRequestManagerFabric;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.command.argument.ItemStringReader;
+import net.minecraft.component.ComponentChanges;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -61,11 +61,10 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
                 for (int i = 0; i < size; i++) {
                     String uuid = dataInputStream.readUTF();
                     String itemId = dataInputStream.readUTF();
-                    Item item = Registries.ITEM.get(Identifier.tryParse(dataInputStream.readUTF()));
                     String itemNBT = dataInputStream.readUTF();
                     int amount = dataInputStream.readInt();
                     int count = dataInputStream.readInt();
-                    CaseItem caseItem = new CaseItem(itemId, createItemStack(item, amount, itemNBT));
+                    CaseItem caseItem = new CaseItem(itemId, createItemStack(itemId, amount, itemNBT));
                     playerCaseItemStats.add(new PlayerCaseItemStat(UUID.fromString(uuid), caseItem, count));
                 }
                 return playerCaseItemStats;
@@ -76,10 +75,10 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
                 for (int i = 0; i < size; i++) {
                     String id = dataInputStream.readUTF();
 
-                    Item item = Registries.ITEM.get(Identifier.tryParse(dataInputStream.readUTF()));
+                    String itemID = dataInputStream.readUTF();
                     String itemNBT = dataInputStream.readUTF();
 
-                    CaseStat caseStat = new CaseStat(id, createItemStack(item, 1, itemNBT));
+                    CaseStat caseStat = new CaseStat(id, createItemStack(itemID, 1, itemNBT));
                     caseStats.add(caseStat);
                 }
                 return caseStats;
@@ -88,18 +87,19 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
         }
     }
 
-    private static ItemStack createItemStack(Item item, int amount, String itemString) {
-        ItemStack stack = new ItemStack(item, amount);
-        NbtCompound nbtCompound = null;
+    private static ItemStack createItemStack(String itemID, int amount, String itemString) {
+        String itemAsString = itemID + itemString;
         try {
-            nbtCompound = StringNbtReader.parse(itemString);
-        } catch (CommandSyntaxException e) {
-            CaseStats.LOGGER.error("nbtCompound could not be parse.", e);
+            ItemStringReader.ItemResult arg = new ItemStringReader(MinecraftClient.getInstance().world.getRegistryManager()).consume(new StringReader(itemAsString));
+            Item item = arg.item().value();
+            ItemStack stack = new ItemStack(item, amount);
+            ComponentChanges nbt = arg.components();
+            if (nbt != null) {
+                stack.applyChanges(nbt);
+            }
+            return stack;
+        } catch (CommandSyntaxException ex) {
+            throw new IllegalArgumentException("Could not parse ItemStack: " + itemAsString, ex);
         }
-
-        if (nbtCompound != null) {
-            stack.setNbt(nbtCompound);
-        }
-        return stack;
     }
 }

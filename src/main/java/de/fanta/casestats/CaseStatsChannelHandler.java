@@ -1,47 +1,45 @@
 package de.fanta.casestats;
 
 import de.cubeside.connection.GlobalConnectionFabricClient;
+import de.fanta.casestats.packets.CaseStatsDataS2C;
+import de.fanta.casestats.packets.GlobalServerLogin;
+import net.fabricmc.fabric.api.client.networking.v1.ClientConfigurationNetworking;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 
-public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayChannelHandler {
+public class CaseStatsChannelHandler implements ClientPlayNetworking.PlayPayloadHandler<CaseStatsDataS2C>, ClientConfigurationNetworking.ConfigurationPayloadHandler<CaseStatsDataS2C> {
+    ;
 
-    public static final Identifier CHANNEL_IDENTIFIER = new Identifier("casestats", "data");
+    public CaseStatsChannelHandler() {
+        PayloadTypeRegistry.playS2C().register(CaseStatsDataS2C.PACKET_ID, CaseStatsDataS2C.PACKET_CODEC);
+        PayloadTypeRegistry.configurationS2C().register(CaseStatsDataS2C.PACKET_ID, CaseStatsDataS2C.PACKET_CODEC);
 
-    private final CaseStats caseStats;
-
-    public CaseStatsChannelHandler(CaseStats caseStats) {
-        this.caseStats = caseStats;
-        ClientPlayNetworking.registerGlobalReceiver(CHANNEL_IDENTIFIER, this);
+        ClientPlayNetworking.registerGlobalReceiver(CaseStatsDataS2C.PACKET_ID, this);
+        ClientConfigurationNetworking.registerGlobalReceiver(CaseStatsDataS2C.PACKET_ID, this);
     }
 
     @Override
-    public void receive(MinecraftClient client, ClientPlayNetworkHandler networkHandler, PacketByteBuf packet, PacketSender sender) {
-        int caseOpenDataChannelID = 0;
-        int loginGlobalClientChannelID = 1;
-        try {
-            int caseStatsDateChannel = packet.readByte();
-            int caseStatsDateChannelVersion = packet.readByte();
-            if (caseStatsDateChannel == caseOpenDataChannelID && caseStatsDateChannelVersion == 0) {
-                if (packet.hasArray()) {
-                    byte[] data = packet.array();
-                    caseStats.getGlobalDataHelper().sendCaseData(data);
-                }
-            }
+    public void receive(CaseStatsDataS2C payload, ClientConfigurationNetworking.Context context) {
+        receive(payload);
+    }
 
-            if (caseStatsDateChannel == loginGlobalClientChannelID) {
-                String uuid = packet.readString();
-                String passwort = packet.readString();
-                String ipString = packet.readString();
-                int port = packet.readInt();
-                GlobalConnectionFabricClient.getInstance().loginClientAndWriteConfig(ipString, port, uuid, passwort);
-            }
-        } catch (Exception e) {
-            CaseStats.LOGGER.warn("Unable to read CaseStats data", e);
+    @Override
+    public void receive(CaseStatsDataS2C payload, ClientPlayNetworking.Context context) {
+        receive(payload);
+    }
+
+    public void receive(CaseStatsDataS2C data) {
+        if (data.getServerCaseData() != null) {
+            CaseStats.getInstance().getGlobalDataHelper().sendCaseData(data.getServerCaseData().data());
+        }
+        if (data.getGlobalServerLogin() != null) {
+            GlobalServerLogin login = data.getGlobalServerLogin();
+            GlobalConnectionFabricClient.getInstance().loginClientAndWriteConfig(login.ipString(), login.port(), login.uuid(), login.passwort());
         }
     }
 }
