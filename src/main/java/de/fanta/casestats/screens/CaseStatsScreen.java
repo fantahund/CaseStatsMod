@@ -250,7 +250,7 @@ public class CaseStatsScreen extends Screen {
         protected int listOrder;
 
         public CaseStatsListWidget(MinecraftClient client) {
-            super(client, CaseStatsScreen.this.width, CaseStatsScreen.this.height - customHeaderHeight - 108, 56, 20);
+            super(client, CaseStatsScreen.this.width, CaseStatsScreen.this.height - customHeaderHeight - 110, 55, 20);
             setRenderHeader(false, 0);
             selectedCase = cachedStats.caseStats().stream().findFirst().orElse(null);
         }

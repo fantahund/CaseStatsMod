@@ -55,7 +55,7 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
     @Override
     protected Object handleResponse(CaseStatsGlobalDataRequestType messageType, GlobalServer globalServer, DataInputStream dataInputStream) throws IOException {
         switch (messageType) {
-            case GET_CASE_STATS-> {
+            case GET_CASE_STATS -> {
                 List<PlayerCaseItemStat> playerCaseItemStats = new ArrayList<>();
                 int size = dataInputStream.readInt();
                 for (int i = 0; i < size; i++) {
@@ -83,7 +83,7 @@ public class CaseStatsGlobalDataRequestManager extends GlobalDataRequestManagerF
                 }
                 return caseStats;
             }
-            default-> throw new AssertionError("unknown message type " + messageType);
+            default -> throw new AssertionError("unknown message type " + messageType);
         }
     }
 
