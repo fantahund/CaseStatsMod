@@ -18,8 +18,10 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.StatsScreen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenTexts;
@@ -45,8 +47,8 @@ import java.util.concurrent.TimeoutException;
 
 @Environment(EnvType.CLIENT)
 public class CaseStatsScreen extends Screen {
-    static final Identifier SLOT_TEXTURE = Identifier.of("container/slot");
-    static final Identifier HEADER_TEXTURE = Identifier.of("statistics/header");
+    static final Identifier SLOT_TEXTURE = Identifier.ofVanilla("container/slot");
+    static final Identifier HEADER_TEXTURE = Identifier.ofVanilla("statistics/header");
     private static final Text DOWNLOADING_STATS_TEXT = Text.translatable("multiplayer.downloadingStats");
     private static final String[] PROGRESS_BAR_STAGES = new String[]{"oooooo", "Oooooo", "oOoooo", "ooOooo", "oooOoo", "ooooOo", "oooooO"};
     static final Text NONE_TEXT = Text.translatable("stats.none");
@@ -224,7 +226,7 @@ public class CaseStatsScreen extends Screen {
     }
 
     void renderIcon(DrawContext context, int x, int y, Identifier texture) {
-        context.drawGuiTexture(texture, x, y, 0, 18, 18);
+        context.drawGuiTexture(RenderLayer::getGuiTextured, texture, x, y, 0, 18, 18);
     }
 
     private static Optional<GameProfile> fetchProfile(UUID uuid) {
