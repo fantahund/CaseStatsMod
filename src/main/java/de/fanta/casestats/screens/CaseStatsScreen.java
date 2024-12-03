@@ -18,7 +18,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.StatsScreen;
 import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.render.RenderLayer;
@@ -252,8 +251,7 @@ public class CaseStatsScreen extends Screen {
         protected int listOrder;
 
         public CaseStatsListWidget(MinecraftClient client) {
-            super(client, CaseStatsScreen.this.width, CaseStatsScreen.this.height - customHeaderHeight - 110, 55, 20);
-            setRenderHeader(false, 0);
+            super(client, CaseStatsScreen.this.width, CaseStatsScreen.this.height - customHeaderHeight - 110, 55, 20, 0);
             selectedCase = cachedStats.caseStats().stream().findFirst().orElse(null);
         }
 
@@ -284,13 +282,17 @@ public class CaseStatsScreen extends Screen {
 
         @Override
         protected void enableScissor(DrawContext context) {
-            renderHeader(context, getRowLeft(), getY() - customHeaderHeight);
+            renderListHeader(context, getRowLeft(), getY() - customHeaderHeight);
 
             super.enableScissor(context);
         }
 
         @Override
         protected void renderHeader(DrawContext context, int x, int y) {
+            //NOTHING
+        }
+
+        protected void renderListHeader(DrawContext context, int x, int y) {
             if (!this.client.mouse.wasLeftButtonClicked()) {
                 this.selectedHeaderColumn = -1;
             }
